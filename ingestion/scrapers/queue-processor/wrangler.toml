@@ -1,0 +1,50 @@
+# Wrangler configuration for Queue Processor
+
+name = "queue-processor"
+main = "processor.ts"
+compatibility_date = "2024-01-01"
+
+# Account info
+account_id = "b6641681fe423910342b9ffa1364c76d"
+
+# Worker settings
+workers_dev = true
+keep_vars = false
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+
+# R2 Bucket bindings
+[[r2_buckets]]
+binding = "RAW_BUCKET"
+bucket_name = "software-products-raw"
+
+[[r2_buckets]]
+binding = "PRODUCTS_BUCKET"
+bucket_name = "software-products"
+
+# KV namespace binding (for state tracking)
+[[kv_namespaces]]
+binding = "KV"
+id = "902910b487614c549fcdbb0544dea9d9"
+
+# Queue binding (consumer)
+[[queues.consumers]]
+queue = "software-ingestion-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "software-ingestion-dlq"
+
+# Analytics Engine binding (optional)
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# Observability
+[observability]
+enabled = true
+
+# Limits
+[limits]
+cpu_ms = 50000 # 50 seconds for batch processing

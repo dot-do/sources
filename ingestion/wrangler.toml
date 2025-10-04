@@ -1,0 +1,185 @@
+# Data Ingestion Platform - Cloudflare Configuration
+# Architecture: R2-first storage with Pipelines/Streams/Data Catalog/R2 SQL
+
+name = "data-ingestion"
+main = "workers/api.ts"
+compatibility_date = "2025-10-03"
+
+# ============================================================================
+# D1 Databases
+# ============================================================================
+
+[[d1_databases]]
+binding = "DB"
+database_name = "data-ingestion"
+database_id = "YOUR_D1_DATABASE_ID"  # Run: wrangler d1 create data-ingestion
+
+# ============================================================================
+# R2 Buckets (Primary Storage)
+# ============================================================================
+
+[[r2_buckets]]
+binding = "DATA_BUCKET"
+bucket_name = "data-ingestion"      # All data: Parquet files, zone files, raw JSON
+
+# Structured layout:
+# - npm/year=YYYY/month=MM/day=DD/*.parquet
+# - pypi/year=YYYY/month=MM/day=DD/*.parquet
+# - github/profiles/year=YYYY/...
+# - github/repos/year=YYYY/...
+# - github/commits/year=YYYY/...
+# - emails/year=YYYY/...
+# - orgs/year=YYYY/...
+# - domains/year=YYYY/...
+# - whois/year=YYYY/...
+# - zones/tld/*.zone (raw zone files)
+
+# ============================================================================
+# Pipelines (Structured Data Ingestion)
+# ============================================================================
+
+[[pipelines]]
+binding = "INGESTION_PIPELINE"
+pipeline = "data-ingestion-pipeline"
+
+# Pipelines provide:
+# - Schema validation
+# - Automatic batching
+# - Compression
+# - Direct write to R2 in Parquet format
+
+# ============================================================================
+# Streams (Real-time Processing)
+# ============================================================================
+
+# Note: Cloudflare Streams configuration
+# Streams allow real-time processing of data as it arrives
+# Configure via dashboard or API (not directly in wrangler.toml yet)
+
+# ============================================================================
+# KV Namespaces (Caching & Sync State)
+# ============================================================================
+
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"        # Run: wrangler kv:namespace create "DATA_CACHE"
+
+# ============================================================================
+# Queues
+# ============================================================================
+
+[[queues.producers]]
+binding = "INGESTION_QUEUE"
+queue = "ingestion-queue"
+
+[[queues.producers]]
+binding = "PROCESSING_QUEUE"
+queue = "processing-queue"
+
+[[queues.producers]]
+binding = "SCRAPING_QUEUE"
+queue = "scraping-queue"
+
+[[queues.consumers]]
+queue = "ingestion-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "ingestion-dlq"
+
+[[queues.consumers]]
+queue = "processing-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "scraping-queue"
+max_batch_size = 5
+max_batch_timeout = 60
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+[vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "info"
+
+# Set these with: wrangler secret put <NAME>
+# NPM_REGISTRY_URL = "https://replicate.npmjs.com"
+# PYPI_API_URL = "https://pypi.org/pypi"
+# CZDS_API_URL = "https://czds-api.icann.org"
+
+# Secrets (use: wrangler secret put <NAME>)
+# CZDS_USERNAME
+# CZDS_PASSWORD
+# HUNTER_API_KEY
+# CLEARBIT_API_KEY
+# WHOISXML_API_KEY
+# GITHUB_TOKEN           # For GitHub API and commit searches
+# PROXY_USER
+# PROXY_PASS
+
+# ============================================================================
+# Workers
+# ============================================================================
+
+# API Worker (main entry point)
+[[services]]
+binding = "API"
+service = "data-ingestion-api"
+
+# NPM Ingestion Worker
+[[services]]
+binding = "NPM_WORKER"
+service = "data-ingestion-npm"
+
+# PyPI Ingestion Worker
+[[services]]
+binding = "PYPI_WORKER"
+service = "data-ingestion-pypi"
+
+# CZDS Worker
+[[services]]
+binding = "CZDS_WORKER"
+service = "data-ingestion-czds"
+
+# WHOIS Worker
+[[services]]
+binding = "WHOIS_WORKER"
+service = "data-ingestion-whois"
+
+# Email Pattern Worker
+[[services]]
+binding = "EMAIL_WORKER"
+service = "data-ingestion-email"
+
+# ============================================================================
+# Analytics Engine
+# ============================================================================
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# ============================================================================
+# Durable Objects (for stateful processing)
+# ============================================================================
+
+[[durable_objects.bindings]]
+name = "INGESTION_COORDINATOR"
+class_name = "IngestionCoordinator"
+script_name = "data-ingestion"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["IngestionCoordinator"]
+
+# ============================================================================
+# Build Configuration
+# ============================================================================
+
+[build]
+command = "pnpm build"
+
+[build.upload]
+format = "service-worker"

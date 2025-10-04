@@ -1,0 +1,67 @@
+# CZDS Zone File Ingestion Worker Configuration
+
+name = "data-ingestion-czds"
+main = "workers/czds-ingestion.ts"
+compatibility_date = "2025-10-03"
+
+# ============================================================================
+# D1 Database - Operational Metadata
+# ============================================================================
+
+[[d1_databases]]
+binding = "DB"
+database_name = "data-ingestion"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# ============================================================================
+# R2 Bucket - Primary Storage (Zone Files + Parsed Data)
+# ============================================================================
+
+[[r2_buckets]]
+binding = "DATA_BUCKET"
+bucket_name = "data-ingestion"
+
+# ============================================================================
+# KV Namespace - Token Caching
+# ============================================================================
+
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+# ============================================================================
+# Queues - Message Processing
+# ============================================================================
+
+[[queues.producers]]
+binding = "INGESTION_QUEUE"
+queue = "ingestion-queue"
+
+# ============================================================================
+# Analytics Engine
+# ============================================================================
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# ============================================================================
+# Scheduled Triggers
+# ============================================================================
+
+[triggers]
+crons = ["0 2 * * *"]  # Daily at 2 AM UTC - download zone files
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+[vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "info"
+CZDS_API_URL = "https://czds-api.icann.org"
+
+# ============================================================================
+# Secrets (set with: wrangler secret put <NAME>)
+# ============================================================================
+# CZDS_USERNAME - Required (register at czds.icann.org)
+# CZDS_PASSWORD - Required

@@ -1,0 +1,310 @@
+---
+title: O*NET Abilities
+description: Enduring attributes and capacities required for each occupation
+type: TSV
+endpoint: https://www.onetcenter.org/dl_files/database/db_30_0_text/Abilities.txt
+format: TSV
+updateFrequency: quarterly
+collection: Abilities
+schema:
+  - O*NET-SOC Code
+  - Element ID
+  - Element Name
+  - Scale ID
+  - Data Value
+  - N
+  - Standard Error
+  - Lower CI Bound
+  - Upper CI Bound
+  - Recommend Suppress
+  - Not Relevant
+  - Date
+  - Domain Source
+metadata:
+  ns: sources
+  visibility: public
+  version: "30.0"
+tags:
+  - abilities
+  - onet
+  - aptitudes
+---
+
+# O*NET Abilities Data Source
+
+Abilities data describes enduring attributes of the individual that influence performance across various activities.
+
+## Data Schema
+
+### TSV Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| O*NET-SOC Code | string | Occupation code |
+| Element ID | string | Ability element identifier (e.g., 1.A.1.a.1) |
+| Element Name | string | Ability name |
+| Scale ID | string | IM (Importance) or LV (Level) |
+| Data Value | float | Rating value (1-7 scale) |
+| N | integer | Sample size |
+| Standard Error | float | Standard error of measurement |
+
+### Example Rows
+
+```
+15-1252.00	1.A.1.a.1	Oral Comprehension	IM	3.88	8	0.13	3.59	4.16	N	N	07/2021	Analyst
+15-1252.00	1.A.1.a.1	Oral Comprehension	LV	4.62	8	0.18	4.21	5.04	N	N	07/2021	Analyst
+15-1252.00	1.A.1.a.2	Written Comprehension	IM	4.75	8	0.16	4.39	5.11	N	N	07/2021	Analyst
+```
+
+## Abilities Taxonomy
+
+O*NET organizes 52 abilities into four categories:
+
+### Cognitive Abilities (21)
+- Verbal: Oral Comprehension, Written Comprehension, Oral Expression, Written Expression
+- Idea Generation and Reasoning: Fluency of Ideas, Originality, Problem Sensitivity, Deductive Reasoning, Inductive Reasoning, Information Ordering, Category Flexibility
+- Quantitative: Mathematical Reasoning, Number Facility
+- Memory: Memorization
+- Perceptual: Speed of Closure, Flexibility of Closure, Perceptual Speed
+- Spatial: Spatial Orientation, Visualization
+- Attentiveness: Selective Attention, Time Sharing
+
+### Psychomotor Abilities (10)
+- Fine Manipulative: Arm-Hand Steadiness, Manual Dexterity, Finger Dexterity
+- Control Movement: Control Precision, Multilimb Coordination, Response Orientation, Rate Control
+- Reaction Time and Speed: Reaction Time, Wrist-Finger Speed, Speed of Limb Movement
+
+### Physical Abilities (9)
+- Physical Strength: Static Strength, Explosive Strength, Dynamic Strength, Trunk Strength
+- Endurance: Stamina
+- Flexibility, Balance, and Coordination: Extent Flexibility, Dynamic Flexibility, Gross Body Coordination, Gross Body Equilibrium
+
+### Sensory Abilities (12)
+- Visual: Near Vision, Far Vision, Visual Color Discrimination, Night Vision, Peripheral Vision, Depth Perception, Glare Sensitivity
+- Auditory and Speech: Hearing Sensitivity, Auditory Attention, Sound Localization, Speech Recognition, Speech Clarity
+
+## Collection Mapping
+
+Maps to: **db/Abilities/{slug}/readme.mdx**
+
+Each ability gets ONE collection entry aggregating all occupation relationships.
+
+### Slug Generation
+
+```typescript
+// Example: "Oral Comprehension" → "oral-comprehension"
+function generateAbilitySlug(abilityName: string): string {
+  return abilityName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+}
+```
+
+### Frontmatter Structure
+
+```yaml
+---
+elementId: 1.A.1.a.1
+name: Oral Comprehension
+category: Cognitive Abilities
+subcategory: Verbal
+description: The ability to listen to and understand information and ideas presented through spoken words and sentences
+collection: Abilities
+source: onet
+occupations:
+  - code: 15-1252.00
+    title: Software Developers
+    importance: 3.88
+    level: 4.62
+  - code: 29-1141.00
+    title: Registered Nurses
+    importance: 4.50
+    level: 5.25
+  # ... (all occupations requiring this ability)
+---
+```
+
+## Relationships
+
+- **Belongs To**: Ability taxonomy (Cognitive/Psychomotor/Physical/Sensory)
+- **Required By**: Multiple occupations (with importance and level ratings)
+- **Related To**: Skills, knowledge areas, work activities
+
+## Transform Logic
+
+```typescript
+interface AbilityRow {
+  'O*NET-SOC Code': string
+  'Element ID': string
+  'Element Name': string
+  'Scale ID': string // IM = Importance, LV = Level
+  'Data Value': number
+}
+
+interface AbilityOccupation {
+  code: string
+  title: string
+  importance: number // Scale ID = IM
+  level: number      // Scale ID = LV
+}
+
+interface Ability {
+  elementId: string
+  name: string
+  category: string
+  subcategory: string
+  description: string
+  occupations: AbilityOccupation[]
+  slug: string
+  collection: 'Abilities'
+  source: 'onet'
+}
+
+function aggregateAbilities(rows: AbilityRow[]): Ability[] {
+  const abilitiesMap = new Map<string, Ability>()
+
+  for (const row of rows) {
+    const key = row['Element Name']
+    if (!abilitiesMap.has(key)) {
+      abilitiesMap.set(key, {
+        elementId: row['Element ID'],
+        name: row['Element Name'],
+        category: categorizeAbility(row['Element ID']),
+        subcategory: subcategorizeAbility(row['Element ID']),
+        description: '', // Lookup from ability descriptions
+        occupations: [],
+        slug: generateAbilitySlug(row['Element Name']),
+        collection: 'Abilities',
+        source: 'onet',
+      })
+    }
+
+    const ability = abilitiesMap.get(key)!
+    let occupation = ability.occupations.find(o => o.code === row['O*NET-SOC Code'])
+
+    if (!occupation) {
+      occupation = {
+        code: row['O*NET-SOC Code'],
+        title: '', // Lookup from occupations
+        importance: 0,
+        level: 0,
+      }
+      ability.occupations.push(occupation)
+    }
+
+    if (row['Scale ID'] === 'IM') {
+      occupation.importance = row['Data Value']
+    } else if (row['Scale ID'] === 'LV') {
+      occupation.level = row['Data Value']
+    }
+  }
+
+  return Array.from(abilitiesMap.values())
+}
+```
+
+## Import Process
+
+1. **Download**: Fetch Abilities.txt from O*NET (~90,000 rows)
+2. **Parse**: Parse TSV format
+3. **Aggregate**: Group by ability name (52 unique abilities)
+4. **Transform**: Collect all occupation relationships
+5. **Generate**: Create 52 MDX files in db/Abilities/
+6. **Validate**: Verify importance and level data
+
+## Expected Output
+
+~52 MDX files in `db/Abilities/` directory (one per unique ability):
+
+```
+db/Abilities/
+├── readme.mdx (collection index)
+├── oral-comprehension/
+│   └── readme.mdx (lists all occupations with importance/level)
+├── written-comprehension/
+│   └── readme.mdx
+├── deductive-reasoning/
+│   └── readme.mdx
+├── manual-dexterity/
+│   └── readme.mdx
+└── ... (48 more abilities)
+```
+
+## Data Quality Checks
+
+- ✅ All ability names match O*NET taxonomy (52 abilities)
+- ✅ Importance values are 1-7
+- ✅ Level values are 1-7
+- ✅ All occupation codes are valid
+- ✅ Each ability has both IM and LV data
+
+## MDX Content Template
+
+```mdx
+---
+elementId: 1.A.1.a.1
+name: Oral Comprehension
+category: Cognitive Abilities
+subcategory: Verbal
+description: The ability to listen to and understand information and ideas presented through spoken words and sentences
+collection: Abilities
+source: onet
+occupationCount: 873
+topOccupations:
+  - Software Developers (Importance: 3.88, Level: 4.62)
+  - Registered Nurses (Importance: 4.50, Level: 5.25)
+  - Management Analysts (Importance: 4.75, Level: 5.50)
+---
+
+# Oral Comprehension
+
+**Category:** Cognitive Abilities → Verbal
+
+## Definition
+
+The ability to listen to and understand information and ideas presented through spoken words and sentences.
+
+## Required By
+
+This ability is required by **873 occupations** at varying importance and levels:
+
+### High Importance (IM ≥ 4.5)
+
+| Occupation | Code | Importance | Level |
+|------------|------|------------|-------|
+| [[../Occupations/registered-nurses\|Registered Nurses]] | 29-1141.00 | 4.50 | 5.25 |
+| [[../Occupations/management-analysts\|Management Analysts]] | 13-1111.00 | 4.75 | 5.50 |
+
+### Moderate Importance (IM 3.5-4.5)
+
+| Occupation | Code | Importance | Level |
+|------------|------|------------|-------|
+| [[../Occupations/software-developers\|Software Developers]] | 15-1252.00 | 3.88 | 4.62 |
+
+## Related Abilities
+
+- [[written-comprehension|Written Comprehension]] - Reading and understanding written information
+- [[oral-expression|Oral Expression]] - Communicating information through speaking
+- [[active-listening|Active Listening]] - Giving full attention to what others are saying
+
+## Development
+
+This ability can be enhanced through:
+- Active listening practice
+- Focused conversation exercises
+- Language comprehension training
+- Communication workshops
+
+## Assessment
+
+Oral comprehension is typically assessed through:
+- Listening comprehension tests
+- Verbal instructions following
+- Interview performance evaluations
+```
+
+## References
+
+- O*NET Abilities Model: https://www.onetcenter.org/content.html#cm1
+- Abilities Taxonomy: https://www.onetcenter.org/dictionary/30.0/excel/abilities.html

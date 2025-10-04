@@ -1,0 +1,81 @@
+# Docker Compose for Data Ingestion Scrapers
+# Local development environment
+
+version: '3.9'
+
+services:
+  # Main scraper service
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: data-ingestion-scraper
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src
+      - ./workers:/app/workers
+      - ./data:/app/data
+      - scraper_cache:/app/.cache
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - PROXY_USER=${PROXY_USER}
+      - PROXY_PASS=${PROXY_PASS}
+      - CZDS_USERNAME=${CZDS_USERNAME}
+      - CZDS_PASSWORD=${CZDS_PASSWORD}
+      - WHOISXML_API_KEY=${WHOISXML_API_KEY}
+      - HUNTER_API_KEY=${HUNTER_API_KEY}
+      - CLEARBIT_API_KEY=${CLEARBIT_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    networks:
+      - scraper-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Proxy rotation service (optional)
+  # Uses Squid proxy with rotation
+  proxy:
+    image: sameersbn/squid:latest
+    container_name: data-ingestion-proxy
+    ports:
+      - "3128:3128"
+    volumes:
+      - ./config/squid.conf:/etc/squid/squid.conf
+      - proxy_cache:/var/spool/squid
+    networks:
+      - scraper-network
+    restart: unless-stopped
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: data-ingestion-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - scraper-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  scraper_cache:
+  proxy_cache:
+  redis_data:
+
+networks:
+  scraper-network:
+    driver: bridge

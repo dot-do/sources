@@ -1,0 +1,57 @@
+# Python dependencies for web scraping
+
+# Scrapy - Web scraping framework
+Scrapy==2.11.0
+scrapy-playwright==0.0.34
+scrapy-rotating-proxies==0.6.2
+
+# HTTP clients
+requests==2.31.0
+httpx==0.25.2
+aiohttp==3.9.1
+
+# HTML parsing
+beautifulsoup4==4.12.2
+lxml==4.9.3
+html5lib==1.1
+
+# Data processing
+pandas==2.1.4
+numpy==1.26.2
+
+# WHOIS
+python-whois==0.8.0
+whois==0.9.27
+
+# DNS
+dnspython==2.4.2
+
+# Proxy support
+requests[socks]==2.31.0
+pysocks==1.7.1
+
+# Rate limiting
+ratelimit==2.2.1
+
+# Async utilities
+asyncio==3.4.3
+aiodns==3.1.1
+
+# Date/time
+python-dateutil==2.8.2
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Logging
+loguru==0.7.2
+
+# Data validation
+pydantic==2.5.2
+
+# Redis client
+redis==5.0.1
+hiredis==2.2.3
+
+# Playwright (browser automation)
+playwright==1.40.0

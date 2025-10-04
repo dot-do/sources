@@ -1,0 +1,213 @@
+---
+title: O*NET Task Statements
+description: Work tasks and activities for each O*NET occupation
+type: TSV
+endpoint: https://www.onetcenter.org/dl_files/database/db_30_0_text/Task%20Statements.txt
+format: TSV
+updateFrequency: quarterly
+collection: Tasks
+schema:
+  - O*NET-SOC Code
+  - Task ID
+  - Task
+  - Task Type
+  - Incumbents Responding
+metadata:
+  ns: sources
+  visibility: public
+  version: "30.0"
+tags:
+  - tasks
+  - onet
+  - work-activities
+---
+
+# O*NET Task Statements Data Source
+
+Task statements describe the specific work activities performed in each occupation.
+
+## Data Schema
+
+### TSV Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| O*NET-SOC Code | string | Occupation code |
+| Task ID | integer | Unique task identifier |
+| Task | text | Task statement description |
+| Task Type | string | Core or supplemental task |
+| Incumbents Responding | float | % of workers who perform task |
+
+### Example Rows
+
+```
+15-1252.00	1	Analyze user needs and software requirements to determine feasibility of design within time and cost constraints.	Core	92.50
+15-1252.00	2	Confer with systems analysts, engineers, programmers and others to design system and to obtain information on project limitations and capabilities.	Core	87.00
+```
+
+## Collection Mapping
+
+Maps to: **db/Tasks/{slug}/readme.mdx**
+
+### Slug Generation
+
+```typescript
+// Example: Task ID 1 + occupation → "analyze-user-needs-software-requirements"
+function generateTaskSlug(taskId: number, task: string): string {
+  return task
+    .substring(0, 80) // Truncate long statements
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+$/, '') // Remove trailing hyphens
+}
+```
+
+### Frontmatter Structure
+
+```yaml
+---
+taskId: 1
+occupationCode: 15-1252.00
+occupationTitle: Software Developers
+statement: Analyze user needs and software requirements...
+taskType: Core
+incumbentsResponding: 92.5
+collection: Tasks
+source: onet
+version: "30.0"
+---
+```
+
+## Relationships
+
+- **Belongs To**: One occupation (O*NET-SOC Code)
+- **Related To**: Skills, abilities, knowledge areas required
+
+## Transform Logic
+
+```typescript
+interface TaskRow {
+  'O*NET-SOC Code': string
+  'Task ID': number
+  'Task': string
+  'Task Type': string
+  'Incumbents Responding': number
+}
+
+interface Task {
+  taskId: number
+  occupationCode: string
+  statement: string
+  taskType: string
+  incumbentsResponding: number
+  slug: string
+  collection: 'Tasks'
+  source: 'onet'
+}
+
+function transformTask(row: TaskRow): Task {
+  return {
+    taskId: row['Task ID'],
+    occupationCode: row['O*NET-SOC Code'],
+    statement: row['Task'],
+    taskType: row['Task Type'],
+    incumbentsResponding: row['Incumbents Responding'],
+    slug: generateTaskSlug(row['Task ID'], row['Task']),
+    collection: 'Tasks',
+    source: 'onet',
+  }
+}
+```
+
+## Import Process
+
+1. **Download**: Fetch Task Statements.txt from O*NET
+2. **Parse**: Parse TSV format (~20,000 rows)
+3. **Transform**: Apply mapping logic
+4. **Generate**: Create MDX files in db/Tasks/
+5. **Validate**: Verify tasks link to valid occupations
+
+## Expected Output
+
+~20,000 MDX files in `db/Tasks/` directory:
+
+```
+db/Tasks/
+├── readme.mdx (collection index)
+├── analyze-user-needs-software-requirements/
+│   └── readme.mdx
+├── confer-with-systems-analysts-engineers/
+│   └── readme.mdx
+├── design-develop-computer-applications/
+│   └── readme.mdx
+└── ... (19,997 more tasks)
+```
+
+## Data Quality Checks
+
+- ✅ All occupation codes reference valid occupations
+- ✅ Task IDs are unique within each occupation
+- ✅ Task statements are non-empty
+- ✅ Task types are valid (Core/Supplemental)
+- ✅ Incumbents Responding is 0-100%
+
+## MDX Content Template
+
+```mdx
+---
+taskId: 1
+occupationCode: 15-1252.00
+occupationTitle: Software Developers
+statement: Analyze user needs and software requirements to determine feasibility of design within time and cost constraints.
+taskType: Core
+incumbentsResponding: 92.5
+collection: Tasks
+source: onet
+---
+
+# Analyze User Needs and Software Requirements
+
+**Occupation:** [[../Occupations/software-developers|Software Developers]] (`15-1252.00`)
+
+## Task Statement
+
+> Analyze user needs and software requirements to determine feasibility of design within time and cost constraints.
+
+## Details
+
+- **Type:** Core Task
+- **Performed By:** 92.5% of incumbents
+- **Importance:** High
+
+## Related Skills
+
+Tasks like this typically require:
+- Active Listening
+- Critical Thinking
+- Complex Problem Solving
+- Systems Analysis
+- Systems Evaluation
+
+## Related Knowledge
+
+- Computers and Electronics
+- Engineering and Technology
+- Design
+- Mathematics
+
+## Career Context
+
+This task is fundamental to software development roles and represents core activities that define the occupation.
+```
+
+## Update Strategy
+
+- **Full refresh** on major O*NET version updates
+- **Incremental** updates for task modifications
+- Preserve manual enhancements in MDX content
+
+## References
+
+- O*NET Task Data: https://www.onetcenter.org/dictionary/30.0/excel/task_statements.html
+- Task Analysis: https://www.onetcenter.org/content.html#cm2

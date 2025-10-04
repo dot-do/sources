@@ -1,0 +1,73 @@
+{
+  "name": "lead-enrichment-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-03",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // D1 Database - Cache and metadata
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "data-ingestion",
+      "database_id": "YOUR_D1_DATABASE_ID"
+    }
+  ],
+
+  // R2 Bucket - Parquet data storage
+  "r2_buckets": [
+    {
+      "binding": "DATA_BUCKET",
+      "bucket_name": "data-ingestion"
+    }
+  ],
+
+  // KV Namespace - Rate limiting
+  "kv_namespaces": [
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "YOUR_KV_NAMESPACE_ID"
+    }
+  ],
+
+  // Durable Objects - Enrichment engine
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ENRICHMENT_ENGINE",
+        "class_name": "EnrichmentEngine",
+        "script_name": "lead-enrichment-api"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["EnrichmentEngine"]
+    }
+  ],
+
+  // Analytics Engine - Usage tracking
+  "analytics_engine_datasets": [
+    {
+      "binding": "ANALYTICS"
+    }
+  ],
+
+  // Environment variables
+  "vars": {
+    "ENVIRONMENT": "production",
+    "LOG_LEVEL": "info",
+    "CACHE_TTL_SECONDS": 604800,
+    "API_VERSION": "v1"
+  },
+
+  // Build configuration
+  "build": {
+    "command": "pnpm build"
+  },
+
+  // Observability
+  "observability": {
+    "enabled": true
+  }
+}

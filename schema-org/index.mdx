@@ -1,0 +1,287 @@
+---
+title: Schema.org
+description: Collaborative community for creating, maintaining, and promoting schemas for structured data on the Internet
+type: JSON-LD
+endpoint: https://schema.org/
+format: JSON-LD / RDFa
+updateFrequency: continuous
+license: CC BY-SA 3.0
+authentication: None
+metadata:
+  ns: sources
+  visibility: public
+  version: "27.01"
+tags:
+  - schema
+  - vocabulary
+  - linked-data
+  - semantic-web
+  - rdf
+---
+
+# Schema.org
+
+**Schema.org** is a collaborative, community activity with a mission to create, maintain, and promote schemas for structured data on the Internet.
+
+## Overview
+
+Schema.org provides:
+- **Type Hierarchy**: 800+ types organized in a taxonomy
+- **Property Definitions**: 1,400+ properties describing type attributes
+- **Vocabulary**: Shared understanding for structured data
+- **Extensions**: Specialized vocabularies for specific domains
+- **Integration**: Used by Google, Microsoft, Yahoo, Yandex for rich results
+
+## Architecture
+
+### Core Concepts
+
+1. **Types**: Classes of things (Organization, Person, Product, etc.)
+2. **Properties**: Attributes of types (name, description, url, etc.)
+3. **Hierarchy**: Types extend other types via subClassOf
+4. **Data Types**: Text, Number, Boolean, Date, URL, etc.
+
+### Type System
+
+```
+Thing (root)
+├── Action
+├── CreativeWork
+│   ├── Article
+│   ├── Book
+│   └── SoftwareApplication
+├── Event
+├── Intangible
+│   ├── Role
+│   └── Service
+├── Organization
+│   ├── Corporation
+│   ├── EducationalOrganization
+│   └── GovernmentOrganization
+├── Person
+├── Place
+│   ├── AdministrativeArea
+│   └── LocalBusiness
+└── Product
+```
+
+## Data Structure
+
+### JSON-LD Format
+
+Schema.org vocabulary is available as JSON-LD context:
+
+```
+https://schema.org/docs/jsonldcontext.json
+```
+
+### RDF/RDFS Format
+
+Full vocabulary in RDF Schema format:
+
+```
+https://schema.org/version/latest/schemaorg-current-https.jsonld
+https://schema.org/version/latest/schemaorg-current-https.nt
+https://schema.org/version/latest/schemaorg-current-https.rdf
+```
+
+### TSV Format
+
+For database imports, types and properties available as TSV.
+
+## Collections Generated
+
+This source generates the following database collections:
+
+### 1. Types (~800 entries)
+
+**Path**: `db/Types/{slug}/readme.mdx`
+
+Each type includes:
+- Type name and URL
+- Parent types (via rdfs:subClassOf)
+- Description and comments
+- Properties available on type
+- Sub-types extending this type
+- Usage examples
+
+### 2. Properties (~1,400 entries)
+
+**Path**: `db/Properties/{slug}/readme.mdx`
+
+Each property includes:
+- Property name and URL
+- Domain (types that can have this property)
+- Range (expected value types)
+- Description and usage
+- Examples
+
+## Existing Schema.org Files
+
+This repository already contains 900+ schema.org MDX files:
+
+```
+/Users/nathanclevenger/Projects/.do/mdx/schema.org/
+├── Thing.mdx
+├── Organization.mdx
+├── Person.mdx
+├── CreativeWork.mdx
+└── ... (900+ types)
+```
+
+These files follow the pattern:
+
+```yaml
+---
+$id: https://schema.org/Organization
+$type: http://www.w3.org/2000/01/rdf-schema#Class
+label: Organization
+comment: |
+  An organization such as a school, NGO, corporation, club, etc.
+rdfs:label: "Organization"
+rdfs:subClassOf: "https://schema.org/Thing"
+---
+
+# Organization
+
+Description and properties table...
+```
+
+## Import Strategy
+
+### Source Options
+
+1. **Existing MDX Files**: 900+ files in `mdx/schema.org/`
+2. **JSON-LD Context**: Download from schema.org
+3. **RDF Schema**: Complete vocabulary in RDF format
+
+### Migration Approach
+
+**Phase 1**: Migrate existing MDX files to `db/Types/`
+- Copy from `mdx/schema.org/` to `db/Types/`
+- Enhance with additional metadata
+- Add cross-references
+
+**Phase 2**: Extract properties to separate collection
+- Parse property definitions from type files
+- Generate `db/Properties/` collection
+- Link properties to their domain types
+
+**Phase 3**: Enrich with usage examples
+- Add code examples for common types
+- Include real-world JSON-LD examples
+- Cross-reference with O*NET and NAICS (e.g., Organization → NAICS industry codes)
+
+## Type Categories
+
+### Core Types (7)
+
+- **Thing** - The root of all types
+- **Action** - Activities and interactions
+- **CreativeWork** - Creative content
+- **Event** - Scheduled happenings
+- **Intangible** - Abstract concepts
+- **Organization** - Companies, institutions
+- **Person** - Individual people
+- **Place** - Physical locations
+- **Product** - Tangible goods
+
+### Extended Types (~800)
+
+Specialized subtypes covering:
+- E-commerce (Product, Offer, Order)
+- Media (Article, Video, Image, AudioObject)
+- Local Business (Restaurant, Hotel, Store)
+- Health (MedicalCondition, Drug, Hospital)
+- Education (Course, EducationalOrganization)
+- Events (Concert, Festival, SportsEvent)
+
+## Relationships with Other Sources
+
+### With O*NET (Occupations)
+
+Schema.org **Occupation** type maps to O*NET:
+
+```
+schema:Occupation
+  ↓
+O*NET Occupation (15-1252.00: Software Developer)
+  ├─> occupationalCategory: "15-1252.00"
+  ├─> name: "Software Developer"
+  └─> skills: [Programming, Systems Analysis]
+```
+
+### With NAICS (Industries)
+
+Schema.org **Organization** maps to NAICS:
+
+```
+schema:Organization
+  ├─> naics: "511210"
+  ├─> industry: "Software Publishers"
+  └─> isicV4: International equivalent
+```
+
+## Usage Examples
+
+### Define an Organization
+
+```typescript
+import { Organization } from 'schema.org.ai'
+
+const company: Organization = {
+  '@type': 'Organization',
+  name: 'Acme Corp',
+  naics: '511210', // Software Publishers
+  employees: {
+    '@type': 'Occupation',
+    occupationalCategory: '15-1252.00', // Software Developers
+  }
+}
+```
+
+### Query by Type
+
+```typescript
+import { db } from '@mastra/core'
+
+const organizations = await db.types.findOne({
+  where: { label: 'Organization' }
+})
+
+const subtypes = await db.types.findMany({
+  where: { subClassOf: 'https://schema.org/Organization' }
+})
+```
+
+## Data Quality
+
+- **Authority**: Maintained by W3C Community Group
+- **Adoption**: Used by all major search engines
+- **Stability**: Backwards compatible, careful versioning
+- **Coverage**: Comprehensive vocabulary for web data
+- **Standards**: Based on RDF/RDFS semantic web standards
+
+## Extensions
+
+Schema.org includes specialized extensions:
+
+- **auto**: Automotive industry
+- **bib**: Bibliographic data
+- **health-lifesci**: Healthcare and life sciences
+- **pending**: Proposed types under review
+- **attic**: Deprecated/historical types
+
+## Related Sources
+
+- [[onet|O*NET]] - Maps Occupation type to O*NET-SOC codes
+- [[naics|NAICS]] - Maps Organization to industry codes
+- [[gs1|GS1]] - Product identifiers and barcodes
+
+## References
+
+- Schema.org Home: https://schema.org/
+- Full Hierarchy: https://schema.org/docs/full.html
+- JSON-LD Context: https://schema.org/docs/jsonldcontext.json
+- Developer Documentation: https://schema.org/docs/developers.html
+- GitHub Repository: https://github.com/schemaorg/schemaorg

@@ -1,0 +1,229 @@
+---
+title: O*NET Skills
+description: Required skills and their importance levels for each occupation
+type: TSV
+endpoint: https://www.onetcenter.org/dl_files/database/db_30_0_text/Skills.txt
+format: TSV
+updateFrequency: quarterly
+collection: Skills
+schema:
+  - O*NET-SOC Code
+  - Element ID
+  - Element Name
+  - Scale ID
+  - Data Value
+  - N
+  - Standard Error
+  - Lower CI Bound
+  - Upper CI Bound
+  - Recommend Suppress
+  - Not Relevant
+  - Date
+  - Domain Source
+metadata:
+  ns: sources
+  visibility: public
+  version: "30.0"
+tags:
+  - skills
+  - onet
+  - competencies
+---
+
+# O*NET Skills Data Source
+
+Skills data describes the developed capacities that facilitate learning or the performance of activities that occur across jobs.
+
+## Data Schema
+
+### TSV Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| O*NET-SOC Code | string | Occupation code |
+| Element ID | string | Skill element identifier (e.g., 2.A.1.a) |
+| Element Name | string | Skill name |
+| Scale ID | string | IM (Importance) or LV (Level) |
+| Data Value | float | Rating value (1-7 scale) |
+| N | integer | Sample size |
+| Standard Error | float | Standard error of measurement |
+
+### Example Rows
+
+```
+15-1252.00	2.A.1.a	Reading Comprehension	IM	4.50	8	0.00	4.50	4.50	N	N	07/2021	Analyst
+15-1252.00	2.A.1.a	Reading Comprehension	LV	5.00	8	0.26	4.43	5.57	N	N	07/2021	Analyst
+15-1252.00	2.A.1.b	Active Listening	IM	4.12	8	0.13	3.84	4.41	N	N	07/2021	Analyst
+```
+
+## Skills Taxonomy
+
+O*NET organizes 35 skills into two categories:
+
+### Basic Skills (10)
+- Content Skills: Reading Comprehension, Active Listening, Writing, Speaking, Mathematics, Science
+- Process Skills: Critical Thinking, Active Learning, Learning Strategies, Monitoring
+
+### Cross-Functional Skills (25)
+- Social Skills: Social Perceptiveness, Coordination, Persuasion, Negotiation, Instructing, Service Orientation
+- Complex Problem Solving: Complex Problem Solving
+- Technical Skills: Operations Analysis, Technology Design, Equipment Selection, Installation, Programming, Quality Control Analysis, Operations Monitoring, Operation and Control, Equipment Maintenance, Troubleshooting, Repairing
+- Systems Skills: Judgment and Decision Making, Systems Analysis, Systems Evaluation
+- Resource Management: Time Management, Management of Financial Resources, Management of Material Resources, Management of Personnel Resources
+
+## Collection Mapping
+
+Maps to: **db/Skills/{slug}/readme.mdx**
+
+Each skill gets ONE collection entry aggregating all occupation relationships.
+
+### Slug Generation
+
+```typescript
+// Example: "Reading Comprehension" → "reading-comprehension"
+function generateSkillSlug(skillName: string): string {
+  return skillName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+}
+```
+
+### Frontmatter Structure
+
+```yaml
+---
+elementId: 2.A.1.a
+name: Reading Comprehension
+category: Basic Skills
+subcategory: Content Skills
+description: Understanding written sentences and paragraphs in work-related documents
+collection: Skills
+source: onet
+occupations:
+  - code: 15-1252.00
+    title: Software Developers
+    importance: 4.50
+    level: 5.00
+  - code: 29-1141.00
+    title: Registered Nurses
+    importance: 4.75
+    level: 5.25
+  # ... (all occupations requiring this skill)
+---
+```
+
+## Relationships
+
+- **Belongs To**: Skill taxonomy (Basic/Cross-Functional)
+- **Required By**: Multiple occupations (with importance and level ratings)
+- **Related To**: Abilities, knowledge areas
+
+## Transform Logic
+
+```typescript
+interface SkillRow {
+  'O*NET-SOC Code': string
+  'Element ID': string
+  'Element Name': string
+  'Scale ID': string // IM = Importance, LV = Level
+  'Data Value': number
+}
+
+interface SkillOccupation {
+  code: string
+  title: string
+  importance: number // Scale ID = IM
+  level: number      // Scale ID = LV
+}
+
+interface Skill {
+  elementId: string
+  name: string
+  category: string
+  description: string
+  occupations: SkillOccupation[]
+  slug: string
+  collection: 'Skills'
+  source: 'onet'
+}
+
+function aggregateSkills(rows: SkillRow[]): Skill[] {
+  const skillsMap = new Map<string, Skill>()
+
+  for (const row of rows) {
+    const key = row['Element Name']
+    if (!skillsMap.has(key)) {
+      skillsMap.set(key, {
+        elementId: row['Element ID'],
+        name: row['Element Name'],
+        category: categorizeSkill(row['Element ID']),
+        description: '', // Lookup from skills descriptions
+        occupations: [],
+        slug: generateSkillSlug(row['Element Name']),
+        collection: 'Skills',
+        source: 'onet',
+      })
+    }
+
+    const skill = skillsMap.get(key)!
+    let occupation = skill.occupations.find(o => o.code === row['O*NET-SOC Code'])
+
+    if (!occupation) {
+      occupation = {
+        code: row['O*NET-SOC Code'],
+        title: '', // Lookup from occupations
+        importance: 0,
+        level: 0,
+      }
+      skill.occupations.push(occupation)
+    }
+
+    if (row['Scale ID'] === 'IM') {
+      occupation.importance = row['Data Value']
+    } else if (row['Scale ID'] === 'LV') {
+      occupation.level = row['Data Value']
+    }
+  }
+
+  return Array.from(skillsMap.values())
+}
+```
+
+## Import Process
+
+1. **Download**: Fetch Skills.txt from O*NET (~50,000 rows)
+2. **Parse**: Parse TSV format
+3. **Aggregate**: Group by skill name (35 unique skills)
+4. **Transform**: Collect all occupation relationships
+5. **Generate**: Create 35 MDX files in db/Skills/
+6. **Validate**: Verify importance and level data
+
+## Expected Output
+
+~35 MDX files in `db/Skills/` directory (one per unique skill):
+
+```
+db/Skills/
+├── readme.mdx (collection index)
+├── reading-comprehension/
+│   └── readme.mdx (lists all 900 occupations with importance/level)
+├── critical-thinking/
+│   └── readme.mdx
+├── active-learning/
+│   └── readme.mdx
+└── ... (32 more skills)
+```
+
+## Data Quality Checks
+
+- ✅ All skill names match O*NET taxonomy
+- ✅ Importance values are 1-7
+- ✅ Level values are 1-7
+- ✅ All occupation codes are valid
+- ✅ Each skill has both IM and LV data
+
+## References
+
+- O*NET Skills Model: https://www.onetcenter.org/content.html#cm2
+- Skills Taxonomy: https://www.onetcenter.org/dictionary/30.0/excel/skills.html

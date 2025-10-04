@@ -1,0 +1,65 @@
+# WHOIS Ingestion Worker Configuration
+
+name = "data-ingestion-whois"
+main = "workers/whois-ingestion.ts"
+compatibility_date = "2025-10-03"
+
+# ============================================================================
+# D1 Database - Operational Metadata
+# ============================================================================
+
+[[d1_databases]]
+binding = "DB"
+database_name = "data-ingestion"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# ============================================================================
+# R2 Bucket - Primary Storage
+# ============================================================================
+
+[[r2_buckets]]
+binding = "DATA_BUCKET"
+bucket_name = "data-ingestion"
+
+# ============================================================================
+# KV Namespace - WHOIS Data Caching
+# ============================================================================
+
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+# ============================================================================
+# Queues - Message Processing
+# ============================================================================
+
+[[queues.producers]]
+binding = "INGESTION_QUEUE"
+queue = "ingestion-queue"
+
+# ============================================================================
+# Analytics Engine
+# ============================================================================
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# ============================================================================
+# Scheduled Triggers
+# ============================================================================
+
+[triggers]
+crons = ["0 3 * * *"]  # Daily at 3 AM UTC - refresh expiring domains
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+[vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "info"
+
+# ============================================================================
+# Secrets (set with: wrangler secret put <NAME>)
+# ============================================================================
+# WHOISXML_API_KEY - Optional (for reliable WHOIS data)

@@ -1,0 +1,31 @@
+{
+  "name": "@do/scrapers",
+  "version": "1.0.0",
+  "description": "AI-native software product scrapers for G2, Capterra, Product Hunt, Hacker News, GitHub Trending, and more",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:all": "pnpm deploy:g2 && pnpm deploy:producthunt && pnpm deploy:hackernews",
+    "deploy:g2": "wrangler deploy g2/scraper.ts --name g2-scraper",
+    "deploy:producthunt": "wrangler deploy producthunt/scraper.ts --name producthunt-scraper",
+    "deploy:hackernews": "wrangler deploy hackernews/scraper.ts --name hackernews-scraper",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "zod": "^3.22.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231218.0",
+    "@types/node": "^20.10.6",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "wrangler": "^3.22.1"
+  }
+}

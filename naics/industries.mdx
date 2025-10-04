@@ -1,0 +1,340 @@
+---
+title: NAICS Industries
+description: Complete industry classification codes and titles from NAICS 2022
+type: TSV
+endpoint: https://www.census.gov/naics/2022NAICS/2022_NAICS_Index_File.xlsx
+format: TSV/Excel
+updateFrequency: every 5 years
+collection: Industries
+schema:
+  - NAICS Code
+  - NAICS Title
+  - Level
+  - Parent Code
+metadata:
+  ns: sources
+  visibility: public
+  version: "2022"
+tags:
+  - industries
+  - naics
+  - classification
+---
+
+# NAICS Industries Data Source
+
+Complete industry classification data from the 2022 NAICS revision, covering ~1,000 industry codes across all levels of the hierarchy.
+
+## Data Schema
+
+### TSV Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| NAICS Code | string | 2-6 digit industry code |
+| NAICS Title | string | Official industry title |
+| Level | integer | Hierarchy level (2-6 digits) |
+| Parent Code | string | Parent industry code (if applicable) |
+
+### Example Rows
+
+```
+51	Information	2	null
+511	Publishing Industries (except Internet)	3	51
+5112	Software Publishers	4	511
+51121	Software Publishers	5	5112
+511210	Software Publishers	6	51121
+```
+
+## Collection Mapping
+
+Maps to: **db/Industries/{slug}/readme.mdx**
+
+### Slug Generation
+
+```typescript
+// Example: "511210" + "Software Publishers" → "software-publishers"
+function generateIndustrySlug(code: string, title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+}
+```
+
+### Frontmatter Structure
+
+```yaml
+---
+naicsCode: "511210"
+title: Software Publishers
+level: 6
+parentCode: "51121"
+sector: "51"
+sectorTitle: Information
+subsector: "511"
+subsectorTitle: Publishing Industries (except Internet)
+collection: Industries
+source: naics
+version: "2022"
+description: |
+  This industry comprises establishments primarily engaged in computer
+  software publishing or publishing and reproduction. Establishments in
+  this industry carry out operations necessary for producing and
+  distributing computer software, such as designing, providing
+  documentation, assisting in installation, and providing support
+  services to software purchasers.
+children:
+  - None (6-digit is terminal)
+occupations:
+  - 15-1252.00: Software Developers
+  - 15-1211.00: Computer Systems Analysts
+  - 15-1251.00: Computer Programmers
+---
+```
+
+## Relationships
+
+- **Hierarchical**:
+  - Parent: Higher-level industry code
+  - Children: Lower-level industry codes
+  - Sector: 2-digit root (20 sectors)
+
+- **Cross-References**:
+  - Occupations: O*NET occupations employed in industry
+  - Companies: Businesses classified under code
+  - Statistics: Employment, revenue, growth data
+
+## Transform Logic
+
+```typescript
+interface IndustryRow {
+  'NAICS Code': string
+  'NAICS Title': string
+}
+
+interface Industry {
+  naicsCode: string
+  title: string
+  level: number
+  parentCode: string | null
+  sectorCode: string
+  slug: string
+  collection: 'Industries'
+  source: 'naics'
+}
+
+function transformIndustry(row: IndustryRow): Industry {
+  const code = row['NAICS Code']
+  const title = row['NAICS Title']
+
+  return {
+    naicsCode: code,
+    title: title,
+    level: code.length,
+    parentCode: getParentCode(code),
+    sectorCode: code.substring(0, 2),
+    slug: generateIndustrySlug(code, title),
+    collection: 'Industries',
+    source: 'naics',
+  }
+}
+
+function getParentCode(code: string): string | null {
+  if (code.length <= 2) return null
+  return code.substring(0, code.length - 1)
+}
+```
+
+## Hierarchy Building
+
+### Top-Down Approach
+
+```typescript
+interface IndustryHierarchy {
+  code: string
+  title: string
+  children: IndustryHierarchy[]
+}
+
+function buildHierarchy(industries: Industry[]): IndustryHierarchy[] {
+  // Start with 2-digit sectors
+  const sectors = industries.filter(i => i.level === 2)
+
+  return sectors.map(sector => ({
+    code: sector.naicsCode,
+    title: sector.title,
+    children: getChildren(sector.naicsCode, industries)
+  }))
+}
+
+function getChildren(parentCode: string, industries: Industry[]): IndustryHierarchy[] {
+  const children = industries.filter(i => i.parentCode === parentCode)
+
+  return children.map(child => ({
+    code: child.naicsCode,
+    title: child.title,
+    children: getChildren(child.naicsCode, industries)
+  }))
+}
+```
+
+## Import Process
+
+1. **Download**: Fetch 2022 NAICS file from Census Bureau
+2. **Parse**: Parse Excel/TSV format (~1,000 rows)
+3. **Transform**: Apply mapping logic, build hierarchy
+4. **Enrich**: Add descriptions from NAICS manual
+5. **Generate**: Create MDX files in db/Industries/
+6. **Validate**: Verify hierarchy integrity
+
+## Expected Output
+
+~1,000 MDX files in `db/Industries/` directory:
+
+```
+db/Industries/
+├── readme.mdx (collection index with sector list)
+├── information/                         # Sector (51)
+│   ├── readme.mdx
+│   ├── publishing-industries/           # Subsector (511)
+│   │   ├── readme.mdx
+│   │   ├── newspaper-publishers/        # Industry Group (5111)
+│   │   │   └── readme.mdx
+│   │   └── software-publishers/         # 6-digit (511210)
+│   │       └── readme.mdx
+│   └── ... (more subsectors)
+└── ... (19 more sectors)
+```
+
+## Data Quality Checks
+
+- ✅ All NAICS codes are valid format (2-6 digits)
+- ✅ No duplicate codes
+- ✅ All titles are non-empty
+- ✅ Parent-child relationships are valid
+- ✅ All codes map to correct sector
+- ✅ Hierarchy is complete (no orphans)
+
+## MDX Content Template
+
+```mdx
+---
+naicsCode: "511210"
+title: Software Publishers
+level: 6
+parentCode: "51121"
+sector: "51"
+sectorTitle: Information
+collection: Industries
+source: naics
+version: "2022"
+---
+
+# Software Publishers
+
+**NAICS Code:** `511210` (6-digit National Industry)
+
+## Classification
+
+- **Sector:** [[../information|51 - Information]]
+- **Subsector:** [[../information/publishing-industries|511 - Publishing Industries (except Internet)]]
+- **Industry Group:** [[../information/publishing-industries/software-publishers|5112 - Software Publishers]]
+- **Parent:** [[../information/publishing-industries/software-publishers|51121 - Software Publishers]]
+
+## Description
+
+This industry comprises establishments primarily engaged in computer software publishing or publishing and reproduction. Establishments in this industry carry out operations necessary for producing and distributing computer software, such as designing, providing documentation, assisting in installation, and providing support services to software purchasers.
+
+These establishments may design, develop, and publish, or publish only:
+- Systems software
+- Applications software
+- Video game software
+- Software development tools
+
+## Typical Activities
+
+- Designing and developing software
+- Publishing and distributing software
+- Providing software documentation
+- Providing installation support
+- Providing technical support and maintenance
+- Licensing software to users
+
+## Related Occupations
+
+| O*NET Code | Occupation | Typical Employment |
+|------------|------------|-------------------|
+| [[../../Occupations/software-developers\|15-1252.00]] | Software Developers | High |
+| [[../../Occupations/computer-systems-analysts\|15-1211.00]] | Computer Systems Analysts | Moderate |
+| [[../../Occupations/computer-programmers\|15-1251.00]] | Computer Programmers | Moderate |
+| [[../../Occupations/software-quality-assurance\|15-1253.00]] | Software QA Analysts | Moderate |
+
+## Child Industries
+
+None (6-digit is terminal level)
+
+## Similar Industries
+
+- [[../data-processing-hosting|518210 - Data Processing, Hosting, and Related Services]]
+- [[../computer-systems-design|541512 - Computer Systems Design Services]]
+
+## Statistics
+
+*Employment and economic data to be enriched from Bureau of Labor Statistics*
+
+## References
+
+- [2022 NAICS Definition](https://www.census.gov/naics/)
+- [Industry Examples](https://www.census.gov/naics/2022NAICS/2022_NAICS_Index_File.xlsx)
+```
+
+## Update Strategy
+
+### Major Revisions (Every 5 Years)
+
+- **Full refresh**: Import all codes and titles
+- **Remap changes**: Track code changes from previous version
+- **Archive old**: Preserve previous NAICS version for historical data
+
+### Annual Updates
+
+- **Clarifications only**: NAICS codes rarely change between major revisions
+- **Description updates**: Incorporate clarifications from Census Bureau
+
+## Enrichment Sources
+
+### Primary
+
+- NAICS Manual (detailed descriptions)
+- Census Bureau index file (illustrative examples)
+
+### Secondary
+
+- BLS employment data (occupation employment by industry)
+- BEA economic data (GDP by industry)
+- Census Bureau (industry statistics)
+
+## Data Files
+
+### Local Copy
+
+Fallback TSV available at:
+```
+/Users/nathanclevenger/Projects/.do/mdx/config/datasets/naics.tsv
+```
+
+### Remote Source
+
+Official Census Bureau files:
+```
+https://www.census.gov/naics/2022NAICS/2022_NAICS_Index_File.xlsx
+https://www.census.gov/naics/2022NAICS/2022_Definition_File.xlsx
+```
+
+## References
+
+- NAICS 2022 Home: https://www.census.gov/naics/
+- Industry Search: https://www.census.gov/naics/2022NAICS/
+- Full Manual: https://www.census.gov/naics/2022NAICS/2022_NAICS_Manual.pdf

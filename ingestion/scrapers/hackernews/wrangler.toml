@@ -1,0 +1,50 @@
+# Wrangler configuration for Hacker News Scraper
+
+name = "hackernews-scraper"
+main = "scraper.ts"
+compatibility_date = "2024-01-01"
+
+# Account info
+account_id = "b6641681fe423910342b9ffa1364c76d"
+
+# Worker settings
+workers_dev = true
+keep_vars = false
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+
+# Secrets (set via `wrangler secret put`)
+# - USER_AGENT (optional)
+
+# R2 Bucket bindings
+[[r2_buckets]]
+binding = "RAW_BUCKET"
+bucket_name = "software-products-raw"
+
+# KV namespace binding (for rate limiting)
+[[kv_namespaces]]
+binding = "KV"
+id = "902910b487614c549fcdbb0544dea9d9"
+
+# Queue binding (producer)
+[[queues.producers]]
+binding = "INGESTION_QUEUE"
+queue = "software-ingestion-queue"
+
+# Analytics Engine binding (optional)
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# Scheduled triggers (runs daily at 4am UTC)
+[triggers]
+crons = ["0 4 * * *"]
+
+# Observability
+[observability]
+enabled = true
+
+# Limits
+[limits]
+cpu_ms = 30000 # 30 seconds max CPU time

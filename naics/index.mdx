@@ -1,0 +1,229 @@
+---
+title: NAICS - North American Industry Classification System
+description: Official industry classification system used by the U.S., Canada, and Mexico
+type: TSV
+endpoint: https://www.census.gov/naics/
+format: TSV/CSV
+updateFrequency: every 5 years
+license: Public Domain
+authentication: None
+metadata:
+  ns: sources
+  visibility: public
+  version: "2022"
+tags:
+  - industries
+  - naics
+  - classification
+  - census
+---
+
+# NAICS - North American Industry Classification System
+
+The **North American Industry Classification System (NAICS)** is the standard used by Federal statistical agencies in classifying business establishments for the purpose of collecting, analyzing, and publishing statistical data related to the U.S. business economy.
+
+## Overview
+
+NAICS provides a uniform framework for:
+- **Industry classification** - Standardized codes for 1,000+ industries
+- **Economic statistics** - Consistent measurement across sectors
+- **Business analysis** - Industry comparisons and trends
+- **Policy making** - Evidence-based decision support
+
+## NAICS Structure
+
+### Hierarchical Classification
+
+NAICS uses a 2-6 digit hierarchical structure:
+
+| Digits | Level | Example | Title |
+|--------|-------|---------|-------|
+| 2 | Sector | 51 | Information |
+| 3 | Subsector | 511 | Publishing Industries |
+| 4 | Industry Group | 5112 | Software Publishers |
+| 5 | NAICS Industry | 51121 | Software Publishers |
+| 6 | National Industry | 511210 | Software Publishers |
+
+### Code Format
+
+```
+XX        Sector (20 sectors)
+XXX       Subsector (~100 subsectors)
+XXXX      Industry Group (~300 groups)
+XXXXX     NAICS Industry (~700 industries)
+XXXXXX    National Industry (~1000 industries)
+```
+
+## Data Files
+
+### 2022 NAICS Codes
+
+Available formats:
+- **Excel**: Complete code list with descriptions
+- **TSV**: Tab-separated values
+- **PDF**: Official manual with full descriptions
+
+### Download Sources
+
+Primary source:
+```
+https://www.census.gov/naics/
+https://www.census.gov/naics/2022NAICS/2022_NAICS_Index_File.xlsx
+```
+
+Alternative TSV format (from project data):
+```
+mdx/config/datasets/naics.tsv
+```
+
+## Collections Generated
+
+This source generates the following database collections:
+
+### 1. Industries (~1,000 entries)
+
+**Path**: `db/Industries/{slug}/readme.mdx`
+
+**Levels**:
+- 2-digit: 20 sectors
+- 3-digit: ~100 subsectors
+- 4-digit: ~300 industry groups
+- 5-digit: ~700 NAICS industries
+- 6-digit: ~1,000 national industries
+
+**Content**:
+- NAICS code
+- Industry title
+- Parent industry
+- Child industries
+- Description
+- Related occupations (from O*NET cross-reference)
+
+## NAICS Sectors (20)
+
+| Code | Sector |
+|------|--------|
+| 11 | Agriculture, Forestry, Fishing and Hunting |
+| 21 | Mining, Quarrying, and Oil and Gas Extraction |
+| 22 | Utilities |
+| 23 | Construction |
+| 31-33 | Manufacturing |
+| 42 | Wholesale Trade |
+| 44-45 | Retail Trade |
+| 48-49 | Transportation and Warehousing |
+| 51 | Information |
+| 52 | Finance and Insurance |
+| 53 | Real Estate and Rental and Leasing |
+| 54 | Professional, Scientific, and Technical Services |
+| 55 | Management of Companies and Enterprises |
+| 56 | Administrative and Support and Waste Management |
+| 61 | Educational Services |
+| 62 | Health Care and Social Assistance |
+| 71 | Arts, Entertainment, and Recreation |
+| 72 | Accommodation and Food Services |
+| 81 | Other Services (except Public Administration) |
+| 92 | Public Administration |
+
+## Relationships
+
+### With O*NET Occupations
+
+NAICS industries map to O*NET occupations through employment data:
+
+```
+Industry (NAICS 511210: Software Publishers)
+  └─> Employs
+      ├─> Software Developers (15-1252.00)
+      ├─> Computer Systems Analysts (15-1211.00)
+      └─> Computer Programmers (15-1251.00)
+```
+
+### Hierarchy
+
+```
+Sector (51: Information)
+  └─> Subsector (511: Publishing Industries)
+      └─> Industry Group (5112: Software Publishers)
+          └─> NAICS Industry (51121: Software Publishers)
+              └─> National Industry (511210: Software Publishers)
+```
+
+## Import Strategy
+
+### Data Sources
+
+1. **Primary**: Census Bureau NAICS files
+2. **Fallback**: Local TSV file (`mdx/config/datasets/naics.tsv`)
+3. **Enrichment**: Industry descriptions, employment data
+
+### ETL Pipeline
+
+1. **Extract**: Download NAICS code file
+2. **Parse**: Parse TSV/Excel format
+3. **Transform**: Generate slugs, build hierarchy
+4. **Enrich**: Add descriptions, cross-references
+5. **Load**: Write MDX files to db/Industries/
+
+### Update Frequency
+
+- **Major revisions**: Every 5 years (2022, 2027, etc.)
+- **Minor updates**: Annual clarifications
+- **Import strategy**: Full refresh on major versions
+
+## Usage Examples
+
+### Find Industry by Code
+
+```typescript
+import { db } from '@mastra/core'
+
+const industry = await db.industries.findOne({
+  where: { naicsCode: '511210' }
+})
+```
+
+### Get Industry Hierarchy
+
+```typescript
+const sector = await db.industries.findOne({
+  where: { naicsCode: '51' }
+})
+
+const children = await db.industries.findMany({
+  where: { parentCode: '51' }
+})
+```
+
+### Find Related Occupations
+
+```typescript
+const industry = await db.industries.findOne({
+  where: { naicsCode: '511210' }
+})
+
+const occupations = await db.occupations.findMany({
+  where: {
+    industries: { has: industry.naicsCode }
+  }
+})
+```
+
+## Data Quality
+
+- **Authority**: Official U.S. Census Bureau classification
+- **Coverage**: All industries in North American economy
+- **Stability**: 5-year revision cycle ensures stability
+- **International**: Harmonized with Canadian and Mexican systems
+
+## Related Sources
+
+- [[onet|O*NET]] - Occupation data (maps to industries)
+- [[bls|Bureau of Labor Statistics]] - Industry employment data
+- [[schema-org|Schema.org]] - Industry schema definitions
+
+## References
+
+- NAICS Home: https://www.census.gov/naics/
+- 2022 NAICS Manual: https://www.census.gov/naics/2022NAICS/2022_NAICS_Manual.pdf
+- NAICS Search: https://www.census.gov/naics/2022NAICS/2022_Definition_File.xlsx
+- Industry Examples: https://www.census.gov/naics/2022NAICS/2022_NAICS_Index_File.xlsx

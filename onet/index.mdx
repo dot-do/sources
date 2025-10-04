@@ -1,0 +1,177 @@
+---
+title: O*NET Database
+description: Comprehensive occupational information database from the U.S. Department of Labor
+type: API
+endpoint: https://services.onetcenter.org/
+format: JSON
+updateFrequency: quarterly
+license: Public Domain
+authentication: API Key
+metadata:
+  ns: sources
+  visibility: public
+tags:
+  - occupations
+  - labor
+  - onet
+  - employment
+  - careers
+---
+
+# O*NET Database
+
+The **O*NET (Occupational Information Network)** database is America's primary source of occupational information, sponsored by the U.S. Department of Labor/Employment and Training Administration (USDOL/ETA).
+
+## Overview
+
+O*NET provides comprehensive data on 900+ occupations covering the U.S. economy, including:
+
+- **Occupations**: Detailed occupation profiles with SOC codes
+- **Tasks**: Work activities performed in each occupation
+- **Skills**: Required skills and their importance levels
+- **Abilities**: Enduring attributes and capacities
+- **Knowledge**: Organized sets of principles and facts
+- **Work Activities**: Types of work activities performed
+- **Work Context**: Physical and social factors
+- **Education & Training**: Required education and training
+- **Wages & Employment**: Labor market information
+
+## Data Structure
+
+### O*NET-SOC Codes
+
+Each occupation is identified by an 8-digit O*NET-SOC code:
+- Format: `XX-XXXX.XX`
+- Example: `15-1252.00` (Software Developers)
+
+### Data Files
+
+O*NET releases quarterly database exports containing TSV files:
+- `Occupation Data.txt` - Occupation reference
+- `Task Statements.txt` - Work tasks
+- `Skills.txt` - Required skills
+- `Abilities.txt` - Required abilities
+- `Knowledge.txt` - Required knowledge
+- `Work Activities.txt` - General work activities
+- `Work Context.txt` - Work environment factors
+- `Education, Training, and Experience.txt`
+- `Wages.txt`
+
+## API Access
+
+### Database Downloads
+
+Download complete database exports:
+```
+https://www.onetcenter.org/database.html
+https://www.onetcenter.org/dl_files/database/db_30_0_text.zip
+```
+
+### Web Services API
+
+RESTful API for real-time queries:
+```
+https://services.onetcenter.org/ws/
+```
+
+Authentication: Requires API key (free registration)
+
+### Rate Limits
+
+- 50 requests per minute
+- 5000 requests per day
+
+## Collections Generated
+
+This source generates the following database collections:
+
+1. **Occupations** (~900 entries)
+   - Path: `db/Occupations/{slug}/readme.mdx`
+   - Key: O*NET-SOC code
+   - Contains: Title, description, alternate titles, tasks
+
+2. **Tasks** (~20,000 entries)
+   - Path: `db/Tasks/{slug}/readme.mdx`
+   - Key: Task ID
+   - Contains: Task statement, occupation references, importance
+
+3. **Skills** (~35 skill types × 900 occupations)
+   - Path: `db/Skills/{slug}/readme.mdx`
+   - Key: Skill name
+   - Contains: Definition, related occupations, importance levels
+
+4. **Abilities** (~52 ability types × 900 occupations)
+   - Path: `db/Abilities/{slug}/readme.mdx`
+   - Key: Ability name
+   - Contains: Definition, related occupations, importance levels
+
+5. **Knowledge** (~33 knowledge types × 900 occupations)
+   - Path: `db/Knowledge/{slug}/readme.mdx`
+   - Key: Knowledge area
+   - Contains: Description, related occupations, importance levels
+
+## Import Strategy
+
+### Download Schedule
+
+- Quarterly database releases
+- Automated download on release
+- Version tracking in metadata
+
+### ETL Pipeline
+
+1. **Extract**: Download TSV files from O*NET database
+2. **Transform**: Parse TSV, map to Thing types, generate slugs
+3. **Load**: Write MDX files to db/collections/
+
+### Incremental Updates
+
+- Track last import version
+- Only update changed entries
+- Preserve manual edits in MDX frontmatter extensions
+
+## Usage Examples
+
+### Find Software Developer Information
+
+```typescript
+import { db } from '@mastra/core'
+
+const occupation = await db.occupations.findOne({
+  where: { code: '15-1252.00' }
+})
+
+const tasks = await db.tasks.findMany({
+  where: { occupationCode: '15-1252.00' }
+})
+```
+
+### Search by Skill
+
+```typescript
+const occupations = await db.occupations.findMany({
+  where: {
+    skills: { has: 'Programming' }
+  }
+})
+```
+
+## Data Quality
+
+- **Authority**: Official U.S. government data
+- **Coverage**: All major occupations in U.S. economy
+- **Updates**: Quarterly revisions ensure currency
+- **Validation**: Expert review and validation process
+
+## Related Sources
+
+- [[naics|NAICS]] - Industry classification (complements occupation data)
+- [[schema-org|Schema.org]] - Vocabulary for structured data
+- [[bls|Bureau of Labor Statistics]] - Employment and wage statistics
+
+## References
+
+- O*NET Online: https://www.onetonline.org/
+- O*NET Resource Center: https://www.onetcenter.org/
+- Database Documentation: https://www.onetcenter.org/database.html
+- API Documentation: https://services.onetcenter.org/reference/

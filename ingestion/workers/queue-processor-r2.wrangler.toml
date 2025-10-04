@@ -1,0 +1,81 @@
+# Queue Processor Worker Configuration (R2-First Architecture)
+
+name = "data-ingestion-queue-processor"
+main = "workers/queue-processor-r2.ts"
+compatibility_date = "2025-10-03"
+
+# ============================================================================
+# D1 Database - Operational Metadata Only
+# ============================================================================
+
+[[d1_databases]]
+binding = "DB"
+database_name = "data-ingestion"
+database_id = "YOUR_D1_DATABASE_ID"
+
+# ============================================================================
+# R2 Bucket - Primary Storage (ALL DATA)
+# ============================================================================
+
+[[r2_buckets]]
+binding = "DATA_BUCKET"
+bucket_name = "data-ingestion"
+
+# ============================================================================
+# KV Namespace - Caching & State
+# ============================================================================
+
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+# ============================================================================
+# Analytics Engine
+# ============================================================================
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# ============================================================================
+# Pipeline Binding (Optional - for NDJSON → Parquet)
+# ============================================================================
+
+# [[pipelines]]
+# binding = "INGESTION_PIPELINE"
+# pipeline = "data-ingestion-pipeline"
+
+# ============================================================================
+# Queue Consumers
+# ============================================================================
+
+[[queues.consumers]]
+queue = "ingestion-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+dead_letter_queue = "ingestion-dlq"
+
+[[queues.consumers]]
+queue = "processing-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+
+[[queues.consumers]]
+queue = "scraping-queue"
+max_batch_size = 5
+max_batch_timeout = 60
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+[vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "info"
+
+# ============================================================================
+# Build Configuration
+# ============================================================================
+
+[build]
+command = "pnpm build"

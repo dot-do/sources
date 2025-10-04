@@ -1,0 +1,73 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+.turbo
+.cache
+
+# Environment
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+
+# Data files
+data/
+*.csv
+*.json
+*.parquet
+*.zone
+
+# Logs
+logs
+*.log
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+.Python
+venv/
+env/
+.venv
+
+# Playwright
+.playwright
+playwright-report
+test-results
+
+# Temporary
+tmp/
+temp/
+*.tmp

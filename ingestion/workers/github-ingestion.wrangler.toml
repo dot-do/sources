@@ -1,0 +1,65 @@
+# GitHub Ingestion Worker Configuration
+
+name = "data-ingestion-github"
+main = "workers/github-ingestion.ts"
+compatibility_date = "2025-10-03"
+
+# ============================================================================
+# D1 Database - Operational Metadata
+# ============================================================================
+
+[[d1_databases]]
+binding = "DB"
+database_name = "data-ingestion"
+database_id = "YOUR_D1_DATABASE_ID"  # Run: wrangler d1 create data-ingestion
+
+# ============================================================================
+# R2 Bucket - Primary Storage
+# ============================================================================
+
+[[r2_buckets]]
+binding = "DATA_BUCKET"
+bucket_name = "data-ingestion"
+
+# ============================================================================
+# KV Namespace - Caching
+# ============================================================================
+
+[[kv_namespaces]]
+binding = "KV"
+id = "YOUR_KV_NAMESPACE_ID"  # Run: wrangler kv:namespace create "DATA_CACHE"
+
+# ============================================================================
+# Queues - Message Processing
+# ============================================================================
+
+[[queues.producers]]
+binding = "INGESTION_QUEUE"
+queue = "ingestion-queue"
+
+# ============================================================================
+# Analytics Engine
+# ============================================================================
+
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# ============================================================================
+# Scheduled Triggers
+# ============================================================================
+
+[triggers]
+crons = ["0 */4 * * *"]  # Every 4 hours - search for new commits
+
+# ============================================================================
+# Environment Variables
+# ============================================================================
+
+[vars]
+ENVIRONMENT = "production"
+LOG_LEVEL = "info"
+
+# ============================================================================
+# Secrets (set with: wrangler secret put <NAME>)
+# ============================================================================
+# GITHUB_TOKEN - Required for API access (5000 req/hour)

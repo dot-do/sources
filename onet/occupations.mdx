@@ -1,0 +1,156 @@
+---
+title: O*NET Occupations
+description: Detailed occupation profiles from the O*NET database
+type: TSV
+endpoint: https://www.onetcenter.org/dl_files/database/db_30_0_text/Occupation%20Data.txt
+format: TSV
+updateFrequency: quarterly
+collection: Occupations
+schema:
+  - O*NET-SOC Code
+  - Title
+  - Description
+metadata:
+  ns: sources
+  visibility: public
+  version: "30.0"
+tags:
+  - occupations
+  - onet
+  - careers
+---
+
+# O*NET Occupations Data Source
+
+Occupation reference data from the O*NET database, providing comprehensive profiles for 900+ occupations in the U.S. economy.
+
+## Data Schema
+
+### TSV Columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| O*NET-SOC Code | string | 8-digit SOC code (XX-XXXX.XX) |
+| Title | string | Official occupation title |
+| Description | text | Comprehensive occupation description |
+
+### Example Row
+
+```
+15-1252.00	Software Developers	Research, design, and develop computer and network software or specialized utility programs.
+```
+
+## Collection Mapping
+
+Maps to: **db/Occupations/{slug}/readme.mdx**
+
+### Slug Generation
+
+```typescript
+// Example: "15-1252.00" → "software-developers"
+function generateSlug(code: string, title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+}
+```
+
+### Frontmatter Structure
+
+```yaml
+---
+code: 15-1252.00
+title: Software Developers
+description: Research, design, and develop computer...
+collection: Occupations
+source: onet
+version: "30.0"
+updatedAt: 2025-10-04
+---
+```
+
+## Relationships
+
+- **Has Many**: Tasks, Skills, Abilities, Knowledge areas
+- **Belongs To**: NAICS industries
+- **Related To**: Similar occupations, career paths
+
+## Transform Logic
+
+```typescript
+interface OccupationRow {
+  'O*NET-SOC Code': string
+  'Title': string
+  'Description': string
+}
+
+interface Occupation {
+  code: string
+  title: string
+  description: string
+  slug: string
+  collection: 'Occupations'
+  source: 'onet'
+}
+
+function transformOccupation(row: OccupationRow): Occupation {
+  return {
+    code: row['O*NET-SOC Code'],
+    title: row['Title'],
+    description: row['Description'],
+    slug: generateSlug(row['O*NET-SOC Code'], row['Title']),
+    collection: 'Occupations',
+    source: 'onet',
+  }
+}
+```
+
+## Import Process
+
+1. **Download**: Fetch latest TSV from O*NET
+2. **Parse**: Parse TSV format
+3. **Transform**: Apply mapping logic
+4. **Generate**: Create MDX files in db/Occupations/
+5. **Validate**: Verify all occupations imported
+
+## Expected Output
+
+~900 MDX files in `db/Occupations/` directory:
+
+```
+db/Occupations/
+├── readme.mdx (collection index)
+├── software-developers/
+│   └── readme.mdx
+├── registered-nurses/
+│   └── readme.mdx
+├── accountants-and-auditors/
+│   └── readme.mdx
+└── ... (897 more occupations)
+```
+
+## Data Quality Checks
+
+- ✅ All O*NET-SOC codes are valid format
+- ✅ No duplicate codes
+- ✅ All titles are non-empty
+- ✅ Descriptions contain meaningful content
+- ✅ Cross-reference with tasks, skills data
+
+## Update Strategy
+
+### Full Refresh
+- Import all occupations on major version updates
+- Overwrite existing MDX files
+- Preserve manual edits in separate metadata
+
+### Incremental Updates
+- Track changed occupations between versions
+- Only update modified entries
+- Maintain revision history
+
+## References
+
+- O*NET-SOC Taxonomy: https://www.onetcenter.org/taxonomy.html
+- Occupation Data Structure: https://www.onetcenter.org/dictionary/30.0/excel/occupation_data.html

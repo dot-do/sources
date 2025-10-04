@@ -1,0 +1,421 @@
+---
+title: Schema.org Types
+description: Complete type hierarchy from schema.org vocabulary
+type: MDX
+endpoint: /Users/nathanclevenger/Projects/.do/mdx/schema.org/
+format: MDX
+updateFrequency: continuous
+collection: Types
+schema:
+  - $id: Type URL (https://schema.org/Thing)
+  - $type: RDF class type
+  - label: Human-readable name
+  - comment: Description
+  - rdfs:subClassOf: Parent type URL
+metadata:
+  ns: sources
+  visibility: public
+  version: "27.01"
+tags:
+  - types
+  - schema
+  - vocabulary
+---
+
+# Schema.org Types Data Source
+
+Complete vocabulary of 800+ types from schema.org, already available as MDX files in the mdx repository.
+
+## Data Location
+
+Existing files: `/Users/nathanclevenger/Projects/.do/mdx/schema.org/*.mdx`
+
+Count: ~900 MDX files
+
+## Data Schema
+
+### MDX Frontmatter
+
+| Field | Type | Description |
+|-------|------|-------------|
+| $id | URL | Canonical type URL (https://schema.org/TypeName) |
+| $type | URL | RDF class type (rdfs:Class) |
+| label | string | Human-readable type name |
+| comment | text | Type description |
+| rdfs:label | string | RDF label |
+| rdfs:subClassOf | URL | Parent type (inheritance) |
+
+### Example: Organization.mdx
+
+```yaml
+---
+$id: https://schema.org/Organization
+$type: http://www.w3.org/2000/01/rdf-schema#Class
+label: Organization
+comment: |
+  An organization such as a school, NGO, corporation, club, etc.
+rdfs:label: "Organization"
+rdfs:subClassOf: "https://schema.org/Thing"
+---
+
+# Organization
+
+An organization such as a school, NGO, corporation, club, etc.
+
+## Properties
+
+Table of available properties...
+```
+
+## Collection Mapping
+
+Maps to: **db/Types/{slug}/readme.mdx**
+
+### Slug Generation
+
+```typescript
+// Example: "Organization" → "organization"
+function generateTypeSlug(label: string): string {
+  return label
+    .replace(/([A-Z])/g, '-$1') // CamelCase → kebab-case
+    .toLowerCase()
+    .replace(/^-/, '') // Remove leading hyphen
+}
+
+// Examples:
+// "Thing" → "thing"
+// "Organization" → "organization"
+// "LocalBusiness" → "local-business"
+// "SoftwareApplication" → "software-application"
+```
+
+### Frontmatter Structure
+
+```yaml
+---
+schemaId: https://schema.org/Organization
+schemaType: Class
+label: Organization
+description: An organization such as a school, NGO, corporation, club, etc.
+parentType: Thing
+parentUrl: https://schema.org/Thing
+collection: Types
+source: schema.org
+version: "27.01"
+properties:
+  - acceptedPaymentMethod
+  - address
+  - aggregateRating
+  - alumni
+  - employee
+  - founder
+  # ... (60+ properties)
+subTypes:
+  - Airline
+  - Consortium
+  - Corporation
+  - EducationalOrganization
+  - GovernmentOrganization
+  - LibrarySystem
+  - LocalBusiness
+  - MedicalOrganization
+  - NGO
+  - NewsMediaOrganization
+  - PerformingGroup
+  - SportsOrganization
+  # ... (20+ sub-types)
+relatedOccupations:
+  - 11-1011.00: Chief Executives
+  - 11-3011.00: Administrative Services Managers
+relatedIndustries:
+  - All NAICS codes (organizations span all industries)
+---
+```
+
+## Type Hierarchy
+
+### Root Type
+
+**Thing** is the root of all types:
+
+```
+Thing (https://schema.org/Thing)
+├── Properties: additionalType, alternateName, description, disambiguatingDescription,
+│              identifier, image, mainEntityOfPage, name, potentialAction, sameAs,
+│              subjectOf, url
+└── Sub-types: Action, CreativeWork, Event, Intangible, Organization, Person, Place, Product
+```
+
+### Major Branches
+
+```
+Thing
+├── Action (500+ types)
+│   ├── AchieveAction, AssessAction, ConsumeAction, CreateAction, ...
+│   └── InteractAction, MoveAction, OrganizeAction, PlayAction, ...
+├── CreativeWork (150+ types)
+│   ├── Article, Blog, Book, Dataset, Movie, MusicRecording, ...
+│   └── SoftwareApplication, VideoObject, WebPage, ...
+├── Event (20+ types)
+│   ├── BusinessEvent, ChildrensEvent, ComedyEvent, DanceEvent, ...
+│   └── SportsEvent, TheaterEvent, VisualArtsEvent, ...
+├── Intangible (100+ types)
+│   ├── Audience, Brand, Language, Offer, Rating, ...
+│   └── Role, Service, StructuredValue, ...
+├── Organization (30+ types)
+│   ├── Airline, Corporation, EducationalOrganization, ...
+│   └── LocalBusiness (50+ sub-types), MedicalOrganization, NGO, ...
+├── Person
+├── Place (30+ types)
+│   ├── AdministrativeArea, CivicStructure, Landform, ...
+│   └── LocalBusiness, Residence, TouristAttraction, ...
+└── Product (10+ types)
+    ├── IndividualProduct, ProductCollection, ProductGroup, ProductModel, ...
+    └── SomeProducts, Vehicle, ...
+```
+
+## Transform Logic
+
+```typescript
+interface SchemaTypeFile {
+  $id: string
+  $type: string
+  label: string
+  comment: string
+  'rdfs:label': string
+  'rdfs:subClassOf': string
+}
+
+interface Type {
+  schemaId: string
+  label: string
+  description: string
+  parentType: string
+  parentUrl: string
+  slug: string
+  properties: string[]
+  subTypes: string[]
+  collection: 'Types'
+  source: 'schema.org'
+}
+
+function transformType(file: SchemaTypeFile): Type {
+  return {
+    schemaId: file.$id,
+    label: file.label,
+    description: file.comment.trim(),
+    parentType: extractTypeName(file['rdfs:subClassOf']),
+    parentUrl: file['rdfs:subClassOf'],
+    slug: generateTypeSlug(file.label),
+    properties: [], // Extract from content
+    subTypes: [], // Lookup children
+    collection: 'Types',
+    source: 'schema.org',
+  }
+}
+
+function extractTypeName(url: string): string {
+  return url.split('/').pop() || 'Thing'
+}
+```
+
+## Import Process
+
+1. **Read**: Scan existing MDX files in `mdx/schema.org/`
+2. **Parse**: Extract frontmatter from each file
+3. **Build Hierarchy**: Map parent-child relationships
+4. **Extract Properties**: Parse property tables from content
+5. **Transform**: Apply mapping logic
+6. **Generate**: Create MDX files in `db/Types/`
+7. **Validate**: Verify hierarchy integrity
+
+## Expected Output
+
+~800 MDX files in `db/Types/` directory:
+
+```
+db/Types/
+├── readme.mdx (collection index with hierarchy)
+├── thing/
+│   └── readme.mdx (root type)
+├── organization/
+│   ├── readme.mdx
+│   ├── corporation/
+│   │   └── readme.mdx
+│   ├── educational-organization/
+│   │   └── readme.mdx
+│   └── local-business/
+│       ├── readme.mdx
+│       ├── restaurant/
+│       │   └── readme.mdx
+│       └── ... (50+ local business types)
+├── person/
+│   └── readme.mdx
+├── creative-work/
+│   ├── readme.mdx
+│   ├── article/
+│   │   └── readme.mdx
+│   └── software-application/
+│       └── readme.mdx
+└── ... (800+ types total)
+```
+
+## Data Quality Checks
+
+- ✅ All type URLs are valid schema.org URLs
+- ✅ All parent types exist
+- ✅ No circular inheritance
+- ✅ Labels are unique
+- ✅ Descriptions are non-empty
+- ✅ Hierarchy is complete (all types reachable from Thing)
+
+## MDX Content Template
+
+```mdx
+---
+schemaId: https://schema.org/Organization
+label: Organization
+description: An organization such as a school, NGO, corporation, club, etc.
+parentType: Thing
+collection: Types
+source: schema.org
+properties: [name, description, url, address, email, telephone, ...]
+subTypes: [Corporation, EducationalOrganization, GovernmentOrganization, ...]
+---
+
+# Organization
+
+**Parent:** [[thing|Thing]]
+
+## Description
+
+An organization such as a school, NGO, corporation, club, etc.
+
+## Properties
+
+All properties from [[thing|Thing]], plus:
+
+| Property | Expected Type | Description |
+|----------|--------------|-------------|
+| [[../Properties/accepted-payment-method\|acceptedPaymentMethod]] | PaymentMethod, Text | Payment methods accepted |
+| [[../Properties/address\|address]] | PostalAddress, Text | Physical address |
+| [[../Properties/email\|email]] | Text | Email address |
+| [[../Properties/employee\|employee]] | Person | Someone working for this organization |
+| [[../Properties/founder\|founder]] | Person | Founder of the organization |
+| [[../Properties/telephone\|telephone]] | Text | Telephone number |
+| ... | | |
+
+*60+ properties total - see full list at schema.org*
+
+## Sub-Types
+
+- [[corporation|Corporation]] - A business corporation
+- [[educational-organization|EducationalOrganization]] - An educational institution
+- [[government-organization|GovernmentOrganization]] - A governmental organization
+- [[local-business|LocalBusiness]] - A particular physical business (50+ sub-types)
+- [[medical-organization|MedicalOrganization]] - A medical organization
+- [[ngo|NGO]] - Non-governmental organization
+- [[news-media-organization|NewsMediaOrganization]] - News/media organization
+- [[performing-group|PerformingGroup]] - Performance arts group
+- [[sports-organization|SportsOrganization]] - Sports-related organization
+
+*20+ sub-types total*
+
+## Integration with Other Sources
+
+### NAICS Industries
+
+Organizations are classified by NAICS industry codes:
+
+```typescript
+{
+  "@type": "Organization",
+  "name": "Acme Software",
+  "naics": "511210" // Software Publishers
+}
+```
+
+### O*NET Occupations
+
+Organizations employ people in specific occupations:
+
+```typescript
+{
+  "@type": "Organization",
+  "employee": {
+    "@type": "Occupation",
+    "occupationalCategory": "15-1252.00", // Software Developers
+    "name": "Software Developer"
+  }
+}
+```
+
+## Usage Examples
+
+### JSON-LD Embedding
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Acme Corp",
+  "url": "https://acme.com",
+  "logo": "https://acme.com/logo.png",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+1-555-1234",
+    "contactType": "customer service"
+  }
+}
+</script>
+```
+
+### TypeScript SDK
+
+```typescript
+import { Organization } from 'schema.org.ai'
+
+const org: Organization = {
+  '@type': 'Organization',
+  name: 'Acme Corp',
+  url: 'https://acme.com',
+  employee: [
+    {
+      '@type': 'Person',
+      name: 'Jane Smith',
+      jobTitle: 'Software Developer',
+    },
+  ],
+}
+```
+
+## Enrichment Opportunities
+
+1. **Real Examples**: Add real-world JSON-LD examples
+2. **Use Cases**: Document common usage patterns
+3. **Cross-References**: Link to O*NET occupations, NAICS industries
+4. **Validation**: Provide JSON Schema for validation
+5. **Code Samples**: TypeScript/JavaScript usage examples
+
+## Update Strategy
+
+### Continuous Integration
+
+- Monitor schema.org GitHub releases
+- Pull latest vocabulary changes
+- Re-generate MDX files with enhancements
+- Preserve manual edits and examples
+
+### Version Tracking
+
+- Track schema.org version in metadata
+- Maintain changelog of vocabulary changes
+- Provide migration guides for breaking changes
+
+## References
+
+- Schema.org Types: https://schema.org/docs/full.html
+- Type Hierarchy: https://schema.org/docs/full.html
+- JSON-LD Context: https://schema.org/docs/jsonldcontext.json
+- Developer Guide: https://schema.org/docs/developers.html
