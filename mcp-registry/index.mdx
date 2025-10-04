@@ -1,0 +1,332 @@
+---
+title: Model Context Protocol Registry
+description: Official registry and catalog of MCP servers for AI-powered applications
+type: API
+endpoint: https://registry.modelcontextprotocol.io
+format: JSON
+updateFrequency: continuous
+license: Open Source
+authentication: GitHub OAuth / API Key
+metadata:
+  ns: sources
+  visibility: public
+  version: "preview"
+tags:
+  - mcp
+  - model-context-protocol
+  - ai
+  - servers
+  - tools
+  - anthropic
+  - claude
+---
+
+# Model Context Protocol Registry
+
+The **MCP Registry** is an official catalog and API for publicly available Model Context Protocol (MCP) servers, providing centralized discovery and implementation of MCP integrations.
+
+## Overview
+
+The Model Context Protocol is an open standard that enables developers to build secure, two-way connections between their data sources and AI-powered tools. The MCP Registry serves as an app store for MCP servers.
+
+**Key Features:**
+- **Server Discovery**: Browse and search available MCP servers
+- **Namespace Validation**: Ensures server ownership and authenticity
+- **Multi-Auth Support**: GitHub OAuth, OIDC, DNS, and HTTP verification
+- **Community-Driven**: Open source registry with community contributions
+- **Cross-Platform**: Works with Claude Desktop, ChatGPT, Gemini, and other AI platforms
+
+## Architecture
+
+### Technology Stack
+
+- **Backend**: Go
+- **Database**: PostgreSQL
+- **Authentication**: GitHub OAuth, GitHub OIDC, DNS verification, HTTP verification
+- **Deployment**: Docker, Kubernetes
+- **Container Registry**: GitHub Container Registry (ghcr.io)
+
+### Namespace System
+
+MCP servers use reverse-domain namespace conventions:
+
+```
+io.github.domdomegg/my-cool-mcp    # GitHub namespace
+me.adamjones/my-cool-mcp            # Custom domain namespace
+com.anthropic/filesystem            # Official Anthropic servers
+```
+
+**Ownership Validation:**
+- GitHub namespaces require GitHub authentication
+- Custom domains require DNS or HTTP verification
+- Prevents namespace squatting and ensures authenticity
+
+## Data Structure
+
+### MCP Server Schema
+
+Each MCP server in the registry includes:
+
+```typescript
+interface MCPServer {
+  name: string                    // Server name
+  namespace: string               // Reverse-domain namespace
+  version: string                 // Semantic version
+  description: string             // Server description
+  author: {
+    name: string
+    email?: string
+    url?: string
+  }
+  repository?: {
+    type: 'git'
+    url: string
+  }
+  homepage?: string
+  license?: string
+  capabilities: {
+    tools?: string[]              // Available tools
+    resources?: string[]          // Available resources
+    prompts?: string[]            // Available prompts
+  }
+  configuration?: object          // Configuration schema
+  authentication?: {
+    type: string                  // Auth method
+    required: boolean
+  }
+  platform: string[]              // Supported platforms
+  tags: string[]                  // Categorization tags
+}
+```
+
+### Official Anthropic MCP Servers
+
+Pre-built MCP servers from Anthropic:
+
+1. **filesystem** - File system operations
+2. **github** - GitHub API integration
+3. **google-drive** - Google Drive access
+4. **slack** - Slack messaging
+5. **postgres** - PostgreSQL database
+6. **puppeteer** - Browser automation
+7. **git** - Git repository operations
+
+## API Access
+
+### Registry API
+
+Base URL: `https://registry.modelcontextprotocol.io/api`
+
+**Endpoints:**
+
+```bash
+# List all servers
+GET /servers
+
+# Get specific server
+GET /servers/{namespace}/{name}
+
+# Search servers
+GET /servers?q={query}&category={category}
+
+# Get server versions
+GET /servers/{namespace}/{name}/versions
+```
+
+### CLI Tool
+
+Publish and manage servers via CLI:
+
+```bash
+# Install CLI
+npm install -g @modelcontextprotocol/cli
+
+# Login
+mcp auth login
+
+# Publish server
+mcp publish ./package.json
+
+# List servers
+mcp list --namespace io.github.username
+```
+
+### Rate Limits
+
+- **Authenticated**: 1000 requests per hour
+- **Unauthenticated**: 60 requests per hour
+- **Search**: 100 requests per hour
+
+## Collections Generated
+
+This source generates the following database collections:
+
+### 1. MCP Servers (~500+ entries expected)
+
+**Path**: `db/MCP/{namespace}/{name}/readme.mdx`
+
+Each MCP server includes:
+- Server metadata (name, version, description)
+- Namespace and ownership info
+- Capabilities (tools, resources, prompts)
+- Configuration schema
+- Authentication requirements
+- Platform compatibility
+- Installation instructions
+- Usage examples
+
+**Example**: `db/MCP/com.anthropic/filesystem/readme.mdx`
+
+### 2. MCP Tools (~2000+ entries expected)
+
+**Path**: `db/Tools/{namespace}/{tool-name}/readme.mdx`
+
+Each tool includes:
+- Tool name and description
+- Input schema (parameters)
+- Output schema (return values)
+- Parent MCP server reference
+- Usage examples
+- Error handling
+
+### 3. MCP Resources (~1000+ entries expected)
+
+**Path**: `db/Resources/{namespace}/{resource-name}/readme.mdx`
+
+Each resource includes:
+- Resource URI template
+- Data schema
+- Access methods
+- Parent MCP server reference
+
+### 4. MCP Prompts (~500+ entries expected)
+
+**Path**: `db/Prompts/{namespace}/{prompt-name}/readme.mdx`
+
+Each prompt includes:
+- Prompt template
+- Input variables
+- Output format
+- Parent MCP server reference
+
+## Import Strategy
+
+### Download Schedule
+
+- **Real-time**: Watch GitHub repository for updates
+- **Daily sync**: Pull latest server registrations
+- **Version tracking**: Monitor server version releases
+
+### ETL Pipeline
+
+1. **Extract**: Query MCP Registry API for server list
+2. **Transform**: Parse server metadata, generate slugs, extract capabilities
+3. **Load**: Write MDX files to db/MCP/
+
+### Incremental Updates
+
+- Track last sync timestamp
+- Only update changed or new servers
+- Preserve manual edits in MDX frontmatter
+- Version history tracking
+
+## Platform Integration
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "<your-token>"
+      }
+    }
+  }
+}
+```
+
+### OpenAI ChatGPT
+
+As of March 2025, OpenAI officially adopted MCP across ChatGPT desktop app, Agents SDK, and Responses API.
+
+### Google Gemini
+
+As of April 2025, Google DeepMind confirmed MCP support in upcoming Gemini models.
+
+## Usage Examples
+
+### Query MCP Servers
+
+```typescript
+import { db } from '@mastra/core'
+
+// Find all GitHub-related MCP servers
+const githubServers = await db.mcpServers.findMany({
+  where: {
+    tags: { has: 'github' }
+  }
+})
+
+// Get specific server
+const fileSystem = await db.mcpServers.findOne({
+  where: {
+    namespace: 'com.anthropic',
+    name: 'filesystem'
+  }
+})
+```
+
+### Find Tools by Capability
+
+```typescript
+// Find all database-related tools
+const dbTools = await db.tools.findMany({
+  where: {
+    tags: { has: 'database' }
+  }
+})
+```
+
+### Search by Platform
+
+```typescript
+// Find servers compatible with Claude Desktop
+const claudeServers = await db.mcpServers.findMany({
+  where: {
+    platform: { has: 'claude-desktop' }
+  }
+})
+```
+
+## Data Quality
+
+- **Authority**: Official Anthropic-maintained registry
+- **Validation**: Namespace ownership verification
+- **Security**: Authentication required for publishing
+- **Stability**: Preview release, targeting GA in 2025
+- **Community**: Open source with community contributions
+
+## Industry Adoption
+
+**2025 Timeline:**
+- **September 2024**: MCP Registry preview launch
+- **January 2025**: Claude Desktop integration
+- **March 2025**: OpenAI adopts MCP
+- **April 2025**: Google DeepMind announces MCP support
+
+## Related Sources
+
+- [[public-apis|Public APIs]] - REST API directory (complements MCP tools)
+- [[schema-org|Schema.org]] - Data vocabulary (used in MCP data schemas)
+- [[openapi|OpenAPI Spec]] - API specification format
+
+## References
+
+- MCP Registry: https://registry.modelcontextprotocol.io
+- GitHub Repository: https://github.com/modelcontextprotocol/registry
+- Documentation: https://docs.claude.com/en/docs/mcp
+- Anthropic Blog: https://www.anthropic.com/news/model-context-protocol
+- MCP Specification: https://spec.modelcontextprotocol.io

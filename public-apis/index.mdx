@@ -1,0 +1,319 @@
+---
+title: Public APIs Directory
+description: Comprehensive catalog of 1400+ free public APIs for developers across 40+ categories
+type: GitHub Repository
+endpoint: https://github.com/public-apis/public-apis
+format: JSON / Markdown
+updateFrequency: continuous
+license: MIT
+authentication: Various (per API)
+metadata:
+  ns: sources
+  visibility: public
+tags:
+  - apis
+  - public
+  - free
+  - rest
+  - graphql
+  - directory
+---
+
+# Public APIs Directory
+
+**Public APIs** is a collective list of free, public APIs maintained by the developer community on GitHub. It's one of the most popular and comprehensive API directories available, with over 250k GitHub stars.
+
+## Overview
+
+The Public APIs directory provides:
+- **1400+ APIs**: Curated collection across diverse domains
+- **40+ Categories**: Organized from Animals to Weather
+- **Authentication Details**: Clear indication of auth requirements
+- **HTTPS Support**: Security information for each API
+- **CORS Status**: Cross-origin resource sharing compatibility
+- **Community-Driven**: Actively maintained with contributions
+
+## Data Structure
+
+### API Entry Schema
+
+Each API entry includes:
+
+```typescript
+interface PublicAPI {
+  API: string                     // API name
+  Description: string             // What the API provides
+  Auth: string                    // Authentication type
+  HTTPS: boolean                  // HTTPS support
+  Cors: string                    // CORS support status
+  Link: string                    // API documentation URL
+  Category: string                // Primary category
+}
+```
+
+### Authentication Types
+
+- **No Auth**: Open access, no authentication required
+- **apiKey**: Requires API key registration
+- **OAuth**: OAuth 2.0 authentication
+- **X-Mashape-Key**: RapidAPI authentication
+- **User-Agent**: Requires User-Agent header
+
+### CORS Status
+
+- **yes**: Full CORS support
+- **no**: No CORS support
+- **unknown**: CORS status not verified
+
+## Categories
+
+### Major Categories (~40 total)
+
+1. **Animals** - Pet data, species info, animal facts
+2. **Anime** - Anime databases, character info
+3. **Anti-Malware** - Security and malware detection
+4. **Art & Design** - Museums, fonts, color palettes
+5. **Authentication & Authorization** - Auth services
+6. **Blockchain** - Cryptocurrency and blockchain data
+7. **Books** - Book databases, ISBN lookup
+8. **Business** - Company data, invoicing
+9. **Calendar** - Date/time utilities, holidays
+10. **Cloud Storage & File Sharing** - Storage APIs
+11. **Continuous Integration** - CI/CD services
+12. **Cryptocurrency** - Bitcoin, Ethereum, trading
+13. **Currency Exchange** - Exchange rates, conversion
+14. **Data Validation** - Email, phone validation
+15. **Development** - Code tools, GitHub, docs
+16. **Dictionaries** - Word definitions, translations
+17. **Documents & Productivity** - PDF, docs, spreadsheets
+18. **Email** - Email sending, validation
+19. **Entertainment** - Jokes, quotes, trivia
+20. **Environment** - Weather, climate, pollution
+21. **Events** - Event listings, tickets
+22. **Finance** - Stock market, banking
+23. **Food & Drink** - Recipes, nutrition, restaurants
+24. **Games & Comics** - Gaming data, comic books
+25. **Geocoding** - Address to coordinates
+26. **Government** - Open government data
+27. **Health** - Medical info, fitness tracking
+28. **Jobs** - Job boards, career data
+29. **Machine Learning** - ML models, predictions
+30. **Music** - Lyrics, streaming, music data
+31. **News** - News aggregators, headlines
+32. **Open Data** - Government and public datasets
+33. **Patent** - Patent search and data
+34. **Personality** - Horoscopes, personality tests
+35. **Phone** - Phone number lookup, SMS
+36. **Photography** - Image hosting, photo APIs
+37. **Science & Math** - Scientific data, calculations
+38. **Security** - Security tools, penetration testing
+39. **Shopping** - E-commerce, product data
+40. **Social** - Social media APIs
+41. **Sports & Fitness** - Sports scores, fitness
+42. **Test Data** - Fake data generators
+43. **Text Analysis** - NLP, sentiment analysis
+44. **Tracking** - Package tracking, location
+45. **Transportation** - Transit, flights, maps
+46. **URL Shorteners** - Link shortening services
+47. **Vehicle** - Car data, VIN lookup
+48. **Video** - Video streaming, encoding
+49. **Weather** - Weather forecasts, conditions
+
+## Collections Generated
+
+This source generates the following database collections:
+
+### 1. Public APIs (~1400 entries)
+
+**Path**: `db/API/{category}/{api-slug}/readme.mdx`
+
+Each API includes:
+- API name and description
+- Documentation URL
+- Authentication requirements
+- HTTPS support status
+- CORS compatibility
+- Rate limiting information
+- Pricing (all free)
+- Example requests
+- Response formats
+- Related APIs in category
+
+**Example**: `db/API/Weather/OpenWeather_API/readme.mdx`
+
+### 2. API Categories (~45 entries)
+
+**Path**: `db/Categories/{category-slug}/readme.mdx`
+
+Each category includes:
+- Category name and description
+- List of APIs in category
+- Common use cases
+- Authentication patterns
+- Popular APIs
+
+### 3. API Authentication Methods (~5 types)
+
+**Path**: `db/Auth_Methods/{method-slug}/readme.mdx`
+
+Documentation for each auth type:
+- Authentication flow
+- How to obtain credentials
+- Example implementation
+- Security considerations
+- APIs using this method
+
+## API Access
+
+### GitHub Repository
+
+```bash
+# Clone repository
+git clone https://github.com/public-apis/public-apis.git
+
+# JSON export available
+curl https://api.publicapis.org/entries
+
+# Filter by category
+curl https://api.publicapis.org/entries?category=weather
+
+# Filter by auth type
+curl https://api.publicapis.org/entries?auth=apiKey
+
+# Search by title
+curl https://api.publicapis.org/entries?title=weather
+```
+
+### Rate Limits
+
+- **GitHub API**: 60 requests/hour (unauthenticated)
+- **publicapis.org API**: No official limits (community-run)
+
+## Import Strategy
+
+### Download Schedule
+
+- **Daily sync**: Pull latest changes from GitHub
+- **Webhook listener**: React to repository updates
+- **Version tracking**: Monitor commit history
+
+### ETL Pipeline
+
+1. **Extract**: Parse README.md markdown table OR query publicapis.org API
+2. **Transform**:
+   - Parse markdown table rows
+   - Extract API metadata
+   - Generate slugs from API names
+   - Categorize by domain
+3. **Load**: Write MDX files to db/API/
+
+### Incremental Updates
+
+- Track last commit SHA
+- Only process changed entries
+- Preserve manual enhancements
+- Maintain version history
+
+## Usage Examples
+
+### Find Weather APIs
+
+```typescript
+import { db } from '@mastra/core'
+
+const weatherAPIs = await db.apis.findMany({
+  where: { category: 'Weather' }
+})
+```
+
+### Find No-Auth APIs
+
+```typescript
+const openAPIs = await db.apis.findMany({
+  where: { auth: 'No Auth' }
+})
+```
+
+### Search by HTTPS Support
+
+```typescript
+const secureAPIs = await db.apis.findMany({
+  where: {
+    https: true,
+    cors: 'yes'
+  }
+})
+```
+
+### Find APIs by Description
+
+```typescript
+const cryptoAPIs = await db.apis.findMany({
+  where: {
+    description: { contains: 'cryptocurrency' }
+  }
+})
+```
+
+## Popular APIs in Directory
+
+### Top APIs by Category
+
+**Cryptocurrency:**
+- CoinGecko - Crypto market data
+- Blockchain.com - Bitcoin blockchain
+- Binance - Crypto trading
+
+**Weather:**
+- OpenWeather - Weather forecasts
+- WeatherAPI - Current and forecast data
+- AccuWeather - Weather information
+
+**Finance:**
+- Alpha Vantage - Stock market data
+- IEX Cloud - Financial data
+- Polygon.io - Market data
+
+**Maps:**
+- Google Maps - Mapping and geocoding
+- Mapbox - Custom maps
+- OpenStreetMap - Open mapping data
+
+**Social:**
+- Twitter - Social media
+- Reddit - Reddit posts and data
+- GitHub - Code repositories
+
+## Data Quality
+
+- **Community Validation**: 250k+ stars, active contributors
+- **Regular Updates**: Daily commits and additions
+- **Quality Control**: PR review process
+- **Accuracy**: Community-verified API status
+- **Coverage**: Comprehensive across all domains
+- **Free**: All APIs are free tier or completely free
+
+## Comparison with Other Sources
+
+| Feature | Public APIs | RapidAPI | APIs.guru |
+|---------|-------------|----------|-----------|
+| Total APIs | 1,400+ | 40,000+ | 2,000+ |
+| Cost | Free | Mixed | Free |
+| Auth | Varies | Unified | Varies |
+| Format | JSON/Markdown | Web UI | OpenAPI |
+| Maintenance | Community | Commercial | Community |
+
+## Related Sources
+
+- [[rapidapi|RapidAPI Hub]] - Larger API marketplace (40,000+ APIs)
+- [[publicapis-io|PublicAPIs.io]] - Alternative interface
+- [[mcp-registry|MCP Registry]] - Model Context Protocol servers
+- [[openapi|OpenAPI Spec]] - API specification format
+- [[schema-org|Schema.org]] - Data schemas for APIs
+
+## References
+
+- GitHub Repository: https://github.com/public-apis/public-apis
+- API Endpoint: https://api.publicapis.org/entries
+- Contributing Guide: https://github.com/public-apis/public-apis/blob/master/CONTRIBUTING.md
+- Project Stats: 250k+ stars, 5k+ forks, 40k+ commits

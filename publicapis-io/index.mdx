@@ -1,0 +1,395 @@
+---
+title: PublicAPIs.io
+description: Searchable directory of 1000+ free public APIs with live search and filtering
+type: Web Directory
+endpoint: https://publicapis.io
+format: JSON / Web
+updateFrequency: continuous
+license: MIT
+authentication: Various (per API)
+metadata:
+  ns: sources
+  visibility: public
+tags:
+  - apis
+  - public
+  - free
+  - directory
+  - search
+---
+
+# PublicAPIs.io
+
+**PublicAPIs.io** is a curated, searchable directory of over 1000 free public and open REST APIs, providing a user-friendly interface for API discovery with advanced filtering and search capabilities.
+
+## Overview
+
+PublicAPIs.io provides:
+- **1000+ APIs**: Curated collection of quality APIs
+- **Live Search**: Real-time search functionality
+- **Advanced Filters**: Filter by category, auth, HTTPS, CORS
+- **Clean Interface**: Modern, intuitive UI
+- **JSON Export**: Programmatic API access
+- **No Authentication**: Open access to directory
+- **Community-Driven**: Accepts contributions
+
+## Platform Features
+
+### Search & Discovery
+
+1. **Real-Time Search**: Instant results as you type
+2. **Multi-Field Search**: Search across name, description, category
+3. **Category Browser**: Browse by organized categories
+4. **Filter Options**:
+   - Authentication type
+   - HTTPS support
+   - CORS compatibility
+   - Category
+
+### API Details
+
+Each API listing provides:
+- API name and description
+- Documentation link
+- Authentication requirements
+- HTTPS support
+- CORS status
+- Category classification
+- Usage examples (some APIs)
+
+## Data Structure
+
+### PublicAPIs.io Schema
+
+```typescript
+interface PublicAPIEntry {
+  name: string                    // API name
+  description: string             // API description
+  url: string                     // Documentation URL
+  category: string                // Primary category
+  auth: AuthType                  // Authentication type
+  https: boolean                  // HTTPS support
+  cors: CorsStatus                // CORS support
+  link: string                    // API endpoint
+}
+
+type AuthType =
+  | 'None'
+  | 'apiKey'
+  | 'OAuth'
+  | 'X-Mashape-Key'
+  | 'User-Agent'
+
+type CorsStatus =
+  | 'yes'
+  | 'no'
+  | 'unknown'
+```
+
+## Categories
+
+### Available Categories (~35)
+
+1. **Animals** - Pet and wildlife APIs
+2. **Anime** - Anime and manga data
+3. **Art & Design** - Creative resources
+4. **Books** - Book databases and libraries
+5. **Business** - Business intelligence and data
+6. **Calendar** - Date and calendar utilities
+7. **Cloud Storage** - File storage APIs
+8. **Cryptocurrency** - Crypto market data
+9. **Currency** - Exchange rates
+10. **Development** - Developer tools
+11. **Documents** - Document processing
+12. **Entertainment** - Fun and games
+13. **Environment** - Weather and climate
+14. **Finance** - Financial data
+15. **Food & Drink** - Recipes and nutrition
+16. **Games** - Gaming APIs
+17. **Geocoding** - Location services
+18. **Government** - Open government data
+19. **Health** - Medical and fitness
+20. **Jobs** - Job listings
+21. **Machine Learning** - ML services
+22. **Music** - Music data and streaming
+23. **News** - News aggregators
+24. **Open Data** - Public datasets
+25. **Patent** - Patent search
+26. **Photography** - Image services
+27. **Science** - Scientific data
+28. **Security** - Security tools
+29. **Shopping** - E-commerce
+30. **Social** - Social media
+31. **Sports** - Sports data
+32. **Transportation** - Transit and maps
+33. **URL Shorteners** - Link shortening
+34. **Video** - Video APIs
+35. **Weather** - Weather forecasts
+
+## Collections Generated
+
+This source generates the following database collections:
+
+### 1. Public APIs (~1000 entries)
+
+**Path**: `db/API/{category}/{api-slug}/readme.mdx`
+
+Each API includes:
+- Comprehensive description
+- Documentation links
+- Authentication guide
+- HTTPS/CORS information
+- Code examples
+- Related APIs
+- Use cases
+- Rate limiting (if known)
+
+**Example**: `db/API/Weather/OpenWeather/readme.mdx`
+
+### 2. API Categories (~35 entries)
+
+**Path**: `db/Categories/{category-slug}/readme.mdx`
+
+Each category includes:
+- Category overview
+- APIs in category
+- Common patterns
+- Use cases
+- Related categories
+
+## API Access
+
+### Web Interface
+
+Browse at: https://publicapis.io
+
+**Features:**
+- Search bar with live results
+- Category navigation
+- Filter by auth type
+- Filter by HTTPS/CORS
+- One-click documentation links
+
+### JSON API
+
+```bash
+# Get all APIs
+curl https://api.publicapis.io/api/v1/apis
+
+# Search APIs
+curl https://api.publicapis.io/api/v1/apis?search=weather
+
+# Filter by category
+curl https://api.publicapis.io/api/v1/apis?category=weather
+
+# Filter by auth
+curl https://api.publicapis.io/api/v1/apis?auth=apiKey
+
+# Filter by HTTPS
+curl https://api.publicapis.io/api/v1/apis?https=true
+
+# Combine filters
+curl https://api.publicapis.io/api/v1/apis?category=finance&auth=None&https=true
+```
+
+### Rate Limits
+
+- **No official rate limits** on API access
+- **Recommended**: Cache responses, don't spam
+- **Status**: Free, community-maintained
+
+## Import Strategy
+
+### Data Sources
+
+1. **Public APIs GitHub**: Primary data source
+2. **PublicAPIs.io API**: Real-time access
+3. **Community Contributions**: Additional APIs
+
+### Download Schedule
+
+- **Daily sync**: Pull latest changes
+- **Real-time updates**: Monitor API additions
+- **Validation**: Verify API availability
+
+### ETL Pipeline
+
+1. **Extract**:
+   - Query PublicAPIs.io JSON API
+   - Scrape any web-only listings
+   - Pull from GitHub source
+
+2. **Transform**:
+   - Parse API metadata
+   - Validate URLs
+   - Categorize
+   - Generate slugs
+   - Enrich with examples
+
+3. **Load**:
+   - Write MDX files to db/API/
+   - Create category pages
+   - Update indexes
+
+### Incremental Updates
+
+- Track last sync timestamp
+- Only import new/changed APIs
+- Preserve manual edits
+- Version tracking
+
+## Usage Examples
+
+### Find No-Auth APIs
+
+```typescript
+import { db } from '@mastra/core'
+
+const openAPIs = await db.apis.findMany({
+  where: {
+    auth: 'None',
+    https: true
+  }
+})
+```
+
+### Search by Description
+
+```typescript
+const weatherAPIs = await db.apis.findMany({
+  where: {
+    description: { contains: 'weather' }
+  }
+})
+```
+
+### Get APIs by Category
+
+```typescript
+const financeAPIs = await db.apis.findMany({
+  where: { category: 'Finance' }
+})
+```
+
+### Find CORS-Enabled APIs
+
+```typescript
+const corsAPIs = await db.apis.findMany({
+  where: {
+    cors: 'yes',
+    https: true
+  }
+})
+```
+
+## Quality Metrics
+
+### API Validation
+
+PublicAPIs.io performs:
+- **Link checking**: Verifies documentation URLs
+- **Availability testing**: Confirms API endpoints work
+- **Regular updates**: Removes defunct APIs
+- **Community reports**: Users can report issues
+
+### Data Quality
+
+- **Curated**: Hand-selected quality APIs
+- **Verified**: Documentation links checked
+- **Active**: Dead APIs removed
+- **Updated**: Regular maintenance
+- **Free**: All APIs are free tier or open
+
+## Popular APIs
+
+### Most Used Categories
+
+**Top 5 Categories:**
+1. **Weather** - OpenWeather, WeatherAPI, AccuWeather
+2. **Finance** - Alpha Vantage, IEX Cloud, CoinGecko
+3. **Cryptocurrency** - CoinGecko, Blockchain.com, Binance
+4. **News** - NewsAPI, The Guardian, New York Times
+5. **Entertainment** - OMDb (movies), Jokes API, Random User
+
+### Highlighted APIs
+
+**No Authentication Required:**
+- **REST Countries** - Country information
+- **Dog API** - Random dog images
+- **Advice Slip** - Random advice
+- **JSONPlaceholder** - Fake REST API for testing
+- **Random User** - Random user data generator
+
+## Comparison with Other Sources
+
+| Feature | PublicAPIs.io | Public APIs (GitHub) | RapidAPI |
+|---------|---------------|----------------------|----------|
+| Total APIs | 1,000+ | 1,400+ | 40,000+ |
+| Interface | Web + API | GitHub Markdown | Web Marketplace |
+| Search | Live Search | Ctrl+F | Advanced |
+| Filters | Yes | No | Yes |
+| Authentication | Varies | Varies | Unified |
+| Pricing | All Free | All Free | Mixed |
+| Testing | External | External | Built-in |
+
+## Integration Examples
+
+### React Component
+
+```typescript
+import { useEffect, useState } from 'react'
+
+function APIFinder() {
+  const [apis, setApis] = useState([])
+
+  useEffect(() => {
+    fetch('https://api.publicapis.io/api/v1/apis?category=weather')
+      .then(res => res.json())
+      .then(data => setApis(data.apis))
+  }, [])
+
+  return (
+    <ul>
+      {apis.map(api => (
+        <li key={api.name}>
+          <a href={api.url}>{api.name}</a> - {api.description}
+        </li>
+      ))}
+    </ul>
+  )
+}
+```
+
+### Node.js Script
+
+```javascript
+const fetch = require('node-fetch')
+
+async function findAPIs(category) {
+  const response = await fetch(
+    `https://api.publicapis.io/api/v1/apis?category=${category}`
+  )
+  const data = await response.json()
+  return data.apis
+}
+
+// Find all weather APIs
+const weatherAPIs = await findAPIs('weather')
+console.log(weatherAPIs)
+```
+
+## Related Sources
+
+- [[public-apis|Public APIs]] - GitHub-based directory (source)
+- [[rapidapi|RapidAPI Hub]] - Commercial marketplace
+- [[mcp-registry|MCP Registry]] - MCP servers
+- [[openapi|OpenAPI Spec]] - API specification format
+- [[postman|Postman Public API Network]] - Another directory
+
+## References
+
+- Website: https://publicapis.io
+- API Endpoint: https://api.publicapis.io/api/v1/apis
+- GitHub Source: https://github.com/public-apis/public-apis
+- Contributing: Community-driven additions
+- License: MIT (open source)

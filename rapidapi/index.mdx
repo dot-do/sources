@@ -1,0 +1,402 @@
+---
+title: RapidAPI Hub
+description: World's largest API marketplace with 40,000+ APIs and unified authentication
+type: API Marketplace
+endpoint: https://rapidapi.com/hub
+format: REST / GraphQL / SOAP
+updateFrequency: continuous
+license: Various (per API)
+authentication: RapidAPI Key (unified)
+metadata:
+  ns: sources
+  visibility: public
+tags:
+  - apis
+  - marketplace
+  - rapidapi
+  - freemium
+  - commercial
+---
+
+# RapidAPI Hub
+
+**RapidAPI Hub** is the world's largest API marketplace, connecting over 4 million developers with 40,000+ APIs through a unified platform with single authentication.
+
+## Overview
+
+RapidAPI provides:
+- **40,000+ APIs**: Largest collection of public and private APIs
+- **Unified Authentication**: Single API key for all APIs
+- **API Testing**: Built-in testing console
+- **Usage Analytics**: Track API consumption
+- **Monetization**: API providers can monetize their APIs
+- **Enterprise Plans**: Team collaboration and management
+- **Multi-Protocol**: REST, GraphQL, SOAP support
+
+## Platform Features
+
+### For API Consumers
+
+1. **Single API Key**: Access all APIs with one key
+2. **Consistent Interface**: Unified request format
+3. **Built-in Testing**: Test APIs before integration
+4. **Code Snippets**: Auto-generated in 10+ languages
+5. **Usage Dashboard**: Monitor API consumption
+6. **Pricing Transparency**: Clear pricing tiers
+7. **Support**: Dedicated support for paid plans
+
+### For API Providers
+
+1. **Monetization**: Charge for API usage
+2. **Analytics**: Track usage and revenue
+3. **Documentation**: Auto-generated API docs
+4. **Marketing**: Exposure to 4M+ developers
+5. **Management**: User management and billing
+6. **Versioning**: API version control
+
+## Data Structure
+
+### RapidAPI Schema
+
+```typescript
+interface RapidAPIEntry {
+  id: string                      // Unique API ID
+  name: string                    // API name
+  description: string             // API description
+  category: string                // Primary category
+  provider: {
+    name: string
+    url: string
+    email?: string
+  }
+  pricing: {
+    free: boolean                 // Has free tier
+    tiers: Array<{
+      name: string                // Plan name
+      price: number               // Monthly price
+      requests: number            // Request limit
+    }>
+  }
+  endpoints: Array<{
+    path: string
+    method: string
+    description: string
+    parameters: object
+  }>
+  authentication: {
+    type: 'rapidapi-key'          // Always RapidAPI key
+    header: 'X-RapidAPI-Key'
+  }
+  protocol: 'REST' | 'GraphQL' | 'SOAP'
+  baseUrl: string
+  documentation: string
+  rating: number                   // User rating (1-5)
+  usageCount: number               // Monthly usage count
+  tags: string[]
+  status: 'active' | 'deprecated'
+}
+```
+
+## Categories
+
+### Major Categories (~50 total)
+
+**Technology:**
+- Artificial Intelligence & Machine Learning
+- Blockchain & Cryptocurrency
+- Cloud Computing
+- Data & Analytics
+- Database
+- Developer Tools
+- IoT
+
+**Business:**
+- E-commerce
+- Finance & Banking
+- Marketing
+- Payment Processing
+- Productivity
+- CRM
+
+**Media:**
+- Image & Video Processing
+- Music & Audio
+- Social Media
+- Streaming
+
+**Data:**
+- Geolocation
+- Weather
+- Sports
+- News
+- Financial Data
+
+**Communication:**
+- Email
+- SMS
+- Voice & Telephony
+- Messaging
+
+## Collections Generated
+
+This source generates the following database collections:
+
+### 1. RapidAPIs (~40,000 entries)
+
+**Path**: `db/API/{category}/{provider}/{api-name}/readme.mdx`
+
+Each API includes:
+- Full API documentation
+- Endpoint descriptions
+- Authentication setup (RapidAPI key)
+- Pricing tiers
+- Code examples in 10+ languages
+- Provider information
+- User ratings and reviews
+- Usage statistics
+- Related APIs
+
+**Example**: `db/API/Weather/OpenWeather/OpenWeather_API/readme.mdx`
+
+### 2. API Providers (~10,000 entries)
+
+**Path**: `db/Providers/{provider-slug}/readme.mdx`
+
+Each provider includes:
+- Provider profile
+- APIs offered
+- Pricing strategy
+- Support contacts
+- API quality metrics
+- User reviews
+
+### 3. Pricing Tiers
+
+**Path**: `db/Pricing/{api-id}/readme.mdx`
+
+Detailed pricing information:
+- Free tier details
+- Paid plan comparison
+- Request limits
+- Rate limiting
+- Overage charges
+
+## API Access
+
+### RapidAPI Platform API
+
+```bash
+# Subscribe to an API (requires RapidAPI account)
+# All requests use X-RapidAPI-Key header
+
+curl -X GET "https://api.example.com/endpoint" \
+  -H "X-RapidAPI-Key: YOUR_RAPIDAPI_KEY" \
+  -H "X-RapidAPI-Host: api.example.com"
+```
+
+### Unified Authentication
+
+**Single Key Approach:**
+1. Sign up at rapidapi.com
+2. Get your RapidAPI key from dashboard
+3. Use same key for all 40,000+ APIs
+4. Billing consolidated across all APIs
+
+### Rate Limits
+
+Rate limits vary by:
+- API subscription tier
+- Individual API limits
+- Account type (free/paid)
+- Typical: 100-10,000 requests/month on free tier
+
+## Import Strategy
+
+### Data Sources
+
+1. **RapidAPI Hub Web Scraping**: Parse API listings
+2. **RapidAPI GraphQL API**: Query API metadata
+3. **OpenAPI Specs**: Download specs for each API
+4. **Provider Data**: API provider information
+
+### Download Schedule
+
+- **Weekly sync**: Pull new and updated APIs
+- **Daily updates**: Pricing and usage statistics
+- **Real-time webhooks**: Major API changes
+
+### ETL Pipeline
+
+1. **Extract**:
+   - Scrape RapidAPI Hub categories
+   - Query GraphQL API for metadata
+   - Download OpenAPI specs
+
+2. **Transform**:
+   - Parse API documentation
+   - Extract endpoint schemas
+   - Generate slugs
+   - Categorize by domain
+   - Extract pricing data
+
+3. **Load**:
+   - Write MDX files to db/API/
+   - Create provider profiles
+   - Generate pricing documentation
+
+### Incremental Updates
+
+- Track API version changes
+- Monitor pricing updates
+- Update ratings and usage stats
+- Preserve manual enhancements
+
+## Usage Examples
+
+### Find AI APIs
+
+```typescript
+import { db } from '@mastra/core'
+
+const aiAPIs = await db.apis.findMany({
+  where: {
+    category: 'Artificial Intelligence',
+    pricing: { free: true }
+  }
+})
+```
+
+### Compare Pricing
+
+```typescript
+const weatherAPIs = await db.apis.findMany({
+  where: {
+    tags: { has: 'weather' }
+  },
+  include: {
+    pricing: true
+  }
+})
+```
+
+### Find High-Rated APIs
+
+```typescript
+const topAPIs = await db.apis.findMany({
+  where: {
+    rating: { gte: 4.5 },
+    usageCount: { gte: 1000 }
+  },
+  orderBy: { rating: 'desc' }
+})
+```
+
+## Popular APIs on RapidAPI
+
+### Most Used APIs
+
+**AI & Machine Learning:**
+- OpenAI GPT-3
+- Hugging Face Transformers
+- Google Cloud Vision
+- IBM Watson
+
+**Financial Data:**
+- Alpha Vantage
+- Yahoo Finance
+- Polygon.io
+- CoinGecko
+
+**Weather:**
+- WeatherAPI
+- OpenWeather
+- AccuWeather
+- ClimaCell
+
+**Geolocation:**
+- Google Maps
+- Mapbox
+- IP Geolocation
+- Geocoding API
+
+**Social Media:**
+- Twitter
+- Instagram
+- LinkedIn
+- TikTok
+
+## Data Quality
+
+- **Coverage**: 40,000+ APIs (largest marketplace)
+- **Verification**: Provider verification required
+- **Monitoring**: API uptime tracking
+- **Reviews**: Community ratings and reviews
+- **Support**: Commercial support available
+- **SLA**: Guaranteed uptime for paid APIs
+
+## Pricing Models
+
+### Free Tier APIs (~15,000)
+
+- Limited requests (typically 100-1,000/month)
+- Basic features
+- Community support
+
+### Freemium APIs (~20,000)
+
+- Free tier + paid upgrades
+- Graduated pricing
+- Higher limits on paid tiers
+
+### Premium APIs (~5,000)
+
+- Paid only
+- Enterprise features
+- SLA guarantees
+- Priority support
+
+## Comparison with Other Sources
+
+| Feature | RapidAPI | Public APIs | APIs.guru |
+|---------|----------|-------------|-----------|
+| Total APIs | 40,000+ | 1,400+ | 2,000+ |
+| Authentication | Unified | Varies | Varies |
+| Monetization | Yes | No | No |
+| Testing Console | Yes | No | Some |
+| Code Generation | Yes | No | Yes |
+| Commercial Support | Yes | No | No |
+| Pricing | Mixed | Free | Free |
+
+## Enterprise Features
+
+**RapidAPI Teams:**
+- Centralized billing
+- Team management
+- Usage analytics
+- API gateway
+- Custom domains
+- Dedicated support
+
+**RapidAPI Enterprise:**
+- Private API marketplace
+- On-premise deployment
+- Custom integrations
+- SSO authentication
+- Compliance certifications
+- 24/7 support
+
+## Related Sources
+
+- [[public-apis|Public APIs]] - Free API directory
+- [[publicapis-io|PublicAPIs.io]] - Alternative directory
+- [[mcp-registry|MCP Registry]] - MCP servers
+- [[openapi|OpenAPI Spec]] - API specification format
+- [[postman|Postman Public API Network]] - Another API marketplace
+
+## References
+
+- RapidAPI Hub: https://rapidapi.com/hub
+- RapidAPI Docs: https://docs.rapidapi.com/
+- API Marketplace Stats: https://rapidapi.com/about
+- GraphQL API: https://rapidapi.com/graphql
+- Developer Portal: https://rapidapi.com/developer
